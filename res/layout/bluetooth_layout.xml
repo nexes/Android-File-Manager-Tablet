@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:padding="8dip">
+	
+	<LinearLayout
+		android:orientation="horizontal"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content">
+		<ImageView
+			android:src="@drawable/bluetooth"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content" />
+		<TextView
+			android:id="@+id/bt_title"
+			android:layout_height="wrap_content"
+			android:layout_width="match_parent"
+			android:layout_gravity="center"
+			android:text="Bluetooth Transfer"
+			android:textAppearance="?android:attr/textAppearanceLarge" />
+	</LinearLayout>
+	
+	<TextView
+		android:id="@+id/bt_message"
+		android:layout_height="wrap_content"
+		android:layout_width="match_parent"
+		android:gravity="center"
+		android:textAppearance="?android:attr/textAppearanceMedium" />
+	<Button
+		android:id="@+id/bt_button"
+		android:layout_height="wrap_content"
+		android:layout_width="match_parent"
+		android:layout_marginTop="15dip"
+		android:gravity="center"
+		android:text="start bluetooth" />
+	<GridView
+			android:id="@+id/bt_gridview"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:verticalSpacing="20dp"
+			android:horizontalSpacing="40dp"
+			android:columnWidth="140dp"
+			android:numColumns="auto_fit"
+			android:stretchMode="columnWidth"
+			android:gravity="center"/>
+
+</LinearLayout>
