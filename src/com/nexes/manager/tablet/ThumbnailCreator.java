@@ -1,5 +1,5 @@
 /*
-    Open Manager, an open source file manager for the Android system
+    Open Manager For Tablets, an open source file manager for the Android system
     Copyright (C) 2011  Joe Berria <nexesdevelopment@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
