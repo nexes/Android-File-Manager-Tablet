@@ -82,13 +82,17 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	private ListView mList = null;
 	private boolean mShowGrid;
 	
-	private ArrayList<String> mData;
+	private ArrayList<String> mData; //the data that is bound to our array adapter.
+	private ArrayList<String> mHoldingFileList; //holding files waiting to be pasted(moved)
+	private ArrayList<String> mHoldingZipList; //holding zip files waiting to be unzipped.
 	private Context mContext;
 	private DataAdapter mDelegate;
 	private ActionMode mActionMode;
 	private boolean mActionModeSelected;
 	private boolean mHoldingFile;
 	private boolean mHoldingZip;
+	private boolean mCutFile;
+	private boolean mFromSearchResult;
 	private int mBackPathIndex;
 	
 	private ActionMode.Callback mFolderOptActionMode = new ActionMode.Callback() {
@@ -122,45 +126,80 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		
 		@Override
 		public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-			String path = mFileMang.getCurrentDir() + "/";
-			String name = mode.getTitle().toString();
+			String name = "/" + mode.getTitle().toString();
+			String path = null;
+			
+			if(mFromSearchResult)
+				path = mode.getTitle().toString();
+			else
+				path = mFileMang.getCurrentDir() + name;
 			
 			switch(item.getItemId()) {
 				case D_MENU_BOOK:
-					mBookmarkList.onBookMarkAdd(path + name);
+					mBookmarkList.onBookMarkAdd(path);
 					mode.finish();
-					
 					return true;
 					
 				case D_MENU_DELETE:
-					mHandler.deleteFile(path + name);
+					mHandler.deleteFile(path);
 					mode.finish();
-					
 					return true;
 					
 				case D_MENU_RENAME:
-					mHandler.renameFile(path + name, true);
+					mHandler.renameFile(path, true);
 					mode.finish();
-					
 					return true;
 					
 				case D_MENU_COPY:
+					if(mHoldingFileList == null)
+						mHoldingFileList = new ArrayList<String>();
+					
+					mHoldingFileList.clear();
+					mHoldingFileList.add(path);
+					mHoldingFile = true;
+					mCutFile = false;
+					((MainActivity)getActivity()).changeActionBarTitle("Holding " + name);
 					mode.finish();
 					return true;
 					
 				case D_MENU_MOVE:
-					mode.finish();
-					return true;
+					if(mHoldingFileList == null)
+						mHoldingFileList = new ArrayList<String>();
 					
-				case D_MENU_ZIP:
+					mHoldingFileList.clear();
+					mHoldingFileList.add(path);
+					mHoldingFile = true;
+					mCutFile = true;
+					((MainActivity)getActivity()).changeActionBarTitle("Holding " + name);
 					mode.finish();
 					return true;
 					
 				case D_MENU_PASTE:
+					if(mHoldingFile && mHoldingFileList.size() > 0)
+						if(mCutFile)
+							mHandler.cutFile(mHoldingFileList, path);
+						else
+							mHandler.copyFile(mHoldingFileList, path);
+					
+					mHoldingFile = false;
+					mHoldingFileList.clear();
+					mHoldingFileList = null;
+					((MainActivity)getActivity()).changeActionBarTitle("Open Manager");
+					mode.finish();
+					return true;
+					
+				case D_MENU_ZIP:
+					mHandler.zipFile(path);
 					mode.finish();
 					return true;
 					
 				case D_MENU_UNZIP:
+					mHandler.unZipFileTo(mHoldingZipList.get(0), path);
+					
+					mHoldingZip = false;
+					mHoldingZipList.clear();
+					mHoldingZipList = null;
+					((MainActivity)getActivity()).changeActionBarTitle("Open Manager");
 					mode.finish();
 					return true;
 			}
@@ -195,36 +234,52 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 
 		@Override
 		public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-			String path = mFileMang.getCurrentDir() + "/";
+			String path = null;
 			String name = mode.getTitle().toString();
+			
+			if(mFromSearchResult)
+				path = name;
+			else
+				path = mFileMang.getCurrentDir() + "/" + name;
 			
 			switch(item.getItemId()) {
 				case F_MENU_DELETE:
-					mHandler.deleteFile(path + name);
+					mHandler.deleteFile(path);					
 					mode.finish();
-					
 					return true;
 					
 				case F_MENU_RENAME:
-					mHandler.renameFile(path + name, false);
+					mHandler.renameFile(path, false);
 					mode.finish();
-					
 					return true;
 					
 				case F_MENU_COPY:
-					mode.finish();
+					if(mHoldingFileList == null)
+						mHoldingFileList = new ArrayList<String>();
 					
+					mHoldingFileList.clear();
+					mHoldingFileList.add(path);
+					mHoldingFile = true;
+					mCutFile = false;
+					((MainActivity)getActivity()).changeActionBarTitle("Holding " + name);				
+					mode.finish();
 					return true;
 					
 				case F_MENU_MOVE:
-					mode.finish();
+					if(mHoldingFileList == null)
+						mHoldingFileList = new ArrayList<String>();
 					
+					mHoldingFileList.clear();
+					mHoldingFileList.add(path);
+					mHoldingFile = true;
+					mCutFile = true;
+					((MainActivity)getActivity()).changeActionBarTitle("Holding " + name);		
+					mode.finish();
 					return true;
 					
 				case F_MENU_SEND:
-					mHandler.sendFile(path + name);
+					mHandler.sendFile(path);
 					mode.finish();
-					
 					return true;
 			}
 			
@@ -262,15 +317,16 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-		View v = inflater.inflate(R.layout.grid_layout, container, false);
+		View v = inflater.inflate(R.layout.main_layout, container, false);
 		v.setBackgroundResource(R.color.lightgray);
 		
 		mPathView = (LinearLayout)v.findViewById(R.id.scroll_path);
-		mDelegate = new DataAdapter(mContext, R.layout.grid_content_layout, mData);
+		//mDelegate = new DataAdapter(mContext, R.layout.grid_content_layout, mData);
 		mGrid = (GridView)v.findViewById(R.id.grid_gridview);
 		mList = (ListView)v.findViewById(R.id.list_listview);
 		
 		if(mShowGrid) {
+			mDelegate = new DataAdapter(mContext, R.layout.grid_content_layout, mData);
 			mGrid.setVisibility(View.VISIBLE);	
 			mGrid.setOnItemClickListener(this);
 			mGrid.setAdapter(mDelegate);
@@ -298,7 +354,8 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 				}
 			});
 			
-		} else if(!mShowGrid) {			
+		} else if(!mShowGrid) {
+			mDelegate = new DataAdapter(mContext, R.layout.list_content_layout, mData);
 			mList.setVisibility(View.VISIBLE);	
 			mList.setOnItemClickListener(this);
 			mList.setAdapter(mDelegate);
@@ -329,51 +386,33 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 
 		return v;
 	}
-	
+		
 	@Override
 	public void onItemClick(AdapterView<?> list, View view, int pos, long id) {
 		String item_ext = "";
-		final String name = mData.get(pos);
+		final String name;// = mData.get(pos);
+		File file;
+		
+		/* if we are getting data from a search result, we need to setup some
+		   vars a little differently. */
+		if(mFromSearchResult) {
+			String s = mData.get(pos);
+			name = s.substring(s.lastIndexOf("/") + 1, s.length());
+			file = new File(s);
+		
+		} else {
+			name = mData.get(pos);
+			file = new File(mFileMang.getCurrentDir() + "/" + name);
+		}
 		
 		if(mMultiSelectOn) {
 			view.setBackgroundColor(0xff0091dc);
 		}
 		
-		if(mFileMang.isDirectory(name) && !mActionModeSelected && !mMultiSelectOn) {
-			Button button = new Button(mContext);
-			mData = mFileMang.getNextDir(name, false);
-			
-			button.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					int index = (Integer)v.getTag();
-					String path = mFileMang.getCurrentDir();
-					String subPath;
-					
-					if(mActionModeSelected || mMultiSelectOn)
-						return;
-					
-					if(index != (mPathView.getChildCount() - 1)) {					
-						while(index < mPathView.getChildCount() - 1) 
-							mPathView.removeViewAt(mPathView.getChildCount() - 1);
-						
-						mBackPathIndex = index + 1;
-						subPath = path.substring(0, path.lastIndexOf(name));
-						mData = mFileMang.getNextDir(subPath + name, true);
-						
-						mDelegate.notifyDataSetChanged();
-					}
-				}
-			});
-			
-			button.setText(name);
-			button.setTag(mBackPathIndex++);
-			mPathView.addView(button);
-						
-			mDelegate.notifyDataSetChanged();
-			
-		} else if (!mFileMang.isDirectory(name) && !mActionModeSelected && !mMultiSelectOn) {
-			File file = new File(mFileMang.getCurrentDir() + "/" + name);
+		if(file.isDirectory() && !mActionModeSelected && !mMultiSelectOn) {
+			addBackButton(name, pos);
+
+		} else if (!file.isDirectory() && !mActionModeSelected && !mMultiSelectOn) {
 			
 			try {
 				item_ext = name.substring(name.lastIndexOf("."), name.length());
@@ -444,13 +483,15 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	    		if(file.exists()) {
 	    			Intent apkIntent = new Intent();
 	    			apkIntent.setAction(android.content.Intent.ACTION_VIEW);
-	    			apkIntent.setDataAndType(Uri.fromFile(file), "application/vnd.android.package-archive");
+	    			apkIntent.setDataAndType(Uri.fromFile(file), 
+	    									 "application/vnd.android.package-archive");
 	    			startActivity(apkIntent);
 	    		}
 	    	}
 			
-			/* HTML file */
-	    	else if(item_ext.equalsIgnoreCase(".html")) {
+			/* HTML XML file */
+	    	else if(item_ext.equalsIgnoreCase(".html") || 
+	    			item_ext.equalsIgnoreCase(".html")) {
 	    		
 	    		if(file.exists()) {
 	    			Intent htmlIntent = new Intent();
@@ -465,6 +506,11 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		    			
 	    			}
 	    		}
+	    	}
+			
+			/* ZIP files */
+	    	else if(item_ext.equalsIgnoreCase(".zip")) {
+	    		mHandler.unzipFile(file.getPath());
 	    	}
 			
 			/* text file*/
@@ -506,6 +552,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		if(mActionModeSelected || mMultiSelectOn)
 			return;
 		
+		mFromSearchResult = false;
 		mData = mFileMang.setHomeDir(name);
 		mDelegate.notifyDataSetChanged();
 		
@@ -513,11 +560,43 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		mBackPathIndex = 0;
 	}
 	
+	/*
+	 * (non-Javadoc)
+	 * @see com.nexes.manager.tablet.EventHandler.OnWorkerThreadFinishedListener#onWorkerThreadComplete(int)
+	 * this will update the data shown to the user after a change to
+	 * the file system has been made from our background thread or EventHandler.
+	 */
 	@Override
-	public void onWorkerThreadComplete(int type) {
-		//check type
-		mData = mFileMang.getNextDir(mFileMang.getCurrentDir(), true);
-		mDelegate.notifyDataSetChanged();
+	public void onWorkerThreadComplete(int type, ArrayList<String> results) {
+		
+		if(type == EventHandler.SEARCH_TYPE) {
+			if(results == null || results.size() < 1) {
+				Toast.makeText(mContext, "Sorry, zero items found", Toast.LENGTH_LONG).show();
+				return;
+			}
+
+			mData.clear();
+			for(String s : results)
+				mData.add(s);
+			
+			mFromSearchResult = true;
+			mDelegate.notifyDataSetChanged();
+			
+		} else if(type == EventHandler.UNZIPTO_TYPE && results != null) {
+			String name = results.get(0);
+			name = name.substring(name.lastIndexOf("/") + 1, name.length());
+			
+			if(mHoldingZipList == null)
+				mHoldingZipList = new ArrayList<String>();
+			
+			mHoldingZipList.add(results.get(0));
+			mHoldingZip = true;
+			((MainActivity)getActivity()).changeActionBarTitle("Holding " + name);
+			
+		} else {
+			mData = mFileMang.getNextDir(mFileMang.getCurrentDir(), true);
+			mDelegate.notifyDataSetChanged();
+		}
 	}
 	
 	@Override
@@ -600,8 +679,16 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		
 	}
 	
+	//performes a search on behalf of MainActivity as
+	//MainActiviy does not have easy access to this FileManger 
+	//or EventHandler objets.
+	public void performeSearch(String query) {
+		mHandler.searchFile(mFileMang.getCurrentDir(), query);
+	}
+	
 	public void newFolder() {
-		mHandler.createNewFolder(mFileMang.getCurrentDir());
+		if(!mFromSearchResult)
+			mHandler.createNewFolder(mFileMang.getCurrentDir());
 	}
 	
 	public static void isMultiSelectOn(boolean state) {
@@ -610,6 +697,45 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	
 	public static void setOnBookMarkAddListener(OnBookMarkAddListener e) {
 		mBookmarkList = e;
+	}
+	
+	private void addBackButton(String name, int pos) {
+		final String bname = name;
+		Button button = new Button(mContext);
+		
+		if(mFromSearchResult)
+			mData = mFileMang.getNextDir(mData.get(pos), true);
+		else
+			mData = mFileMang.getNextDir(name, false);
+		
+		button.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				int index = (Integer)v.getTag();
+				String path = mFileMang.getCurrentDir();
+				String subPath;
+				
+				if(mActionModeSelected || mMultiSelectOn)
+					return;
+				
+				if(index != (mPathView.getChildCount() - 1)) {					
+					while(index < mPathView.getChildCount() - 1) 
+						mPathView.removeViewAt(mPathView.getChildCount() - 1);
+					
+					mBackPathIndex = index + 1;		
+					subPath = path.substring(0, path.lastIndexOf(bname));					
+					mData = mFileMang.getNextDir(subPath + bname, true);
+					
+					mDelegate.notifyDataSetChanged();
+				}
+			}
+		});
+		
+		button.setText(name);
+		button.setTag(mBackPathIndex++);
+		mPathView.addView(button);
+					
+		mDelegate.notifyDataSetChanged();	
 	}
 	
 	
@@ -636,11 +762,23 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		
 		@Override
 		public View getView(int position, View view, ViewGroup parent) {
-			mName = mData.get(position);
-			String current = mFileMang.getCurrentDir();
 			String ext;
-			File file = new File(current + "/" + mName);
+			File file = null;
+			String current = mFileMang.getCurrentDir();
 			
+			/* if we are getting data from a search result, we need to set
+			   up some vars differently than normal. */
+			if(mFromSearchResult) {
+				String n = mData.get(position);
+				mName = n.substring(n.lastIndexOf("/") + 1, n.length());
+				file = new File(n);
+			
+			} else {
+				mName = mData.get(position);
+				file = new File(current + "/" + mName);
+			}
+			
+			/* clear the thumbnail cache when we leave a dir */
 			if(!mTempDir.equals(current)) {
 				mThumbnail.clearBitmapCache();
 				mTempDir = current;
@@ -679,17 +817,24 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			mHolder.mMainText.setText(mName);
 			
 			/* assign custom icons based on file type */
-			if(mFileMang.isDirectory(mName)) {
+			if(file.isDirectory()) {
 				if(file.canRead() && file.list().length > 0)
 					mHolder.mIcon.setImageResource(R.drawable.folder_large_full);
 				else
-					mHolder.mIcon.setImageResource(R.drawable.folder_large);
+					mHolder.mIcon.setImageResource(R.drawable.folder_large);			
 				
 			} else if(ext.equalsIgnoreCase("doc") || ext.equalsIgnoreCase("docx")) {
 				mHolder.mIcon.setImageResource(R.drawable.doc);
 				
-			} else if(ext.equalsIgnoreCase("xls")) {
-				mHolder.mIcon.setImageResource(R.drawable.xls);
+			} else if(ext.equalsIgnoreCase("xls") || ext.equalsIgnoreCase("xlsx") ||
+					ext.equalsIgnoreCase("xlsm")) {
+				mHolder.mIcon.setImageResource(R.drawable.excel);
+				
+			} else if(ext.equalsIgnoreCase("ppt") | ext.equalsIgnoreCase("pptx")) {
+				mHolder.mIcon.setImageResource(R.drawable.powerpoint);
+				
+			} else if(ext.equalsIgnoreCase("zip") || ext.equalsIgnoreCase("gzip")) {
+				mHolder.mIcon.setImageResource(R.drawable.zip);
 				
 			} else if(ext.equalsIgnoreCase("apk")) {
 				mHolder.mIcon.setImageResource(R.drawable.apk);

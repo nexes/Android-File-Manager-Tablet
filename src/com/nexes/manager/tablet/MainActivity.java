@@ -29,6 +29,8 @@ import android.view.MenuItem;
 import android.widget.SearchView;
 import android.util.Log;
 
+//import java.util.ArrayList;
+
 public class MainActivity extends Activity {
 	//keys used for preference file
 	private static final String PREF_LIST_KEY =		"pref_dirlist";
@@ -38,11 +40,11 @@ public class MainActivity extends Activity {
 	private static final String PREF_SORT_KEY = 	"pref_sorting";
 	
 	//menu IDs
-	private static final int MENU_DIR = 		0;
-	private static final int MENU_SEARCH = 		1;
-	private static final int MENU_MULTI =		2;
-	private static final int MENU_SETTINGS = 	3;
-	private static final int PREF_CODE =		6;
+	private static final int MENU_DIR = 		0x0;
+	private static final int MENU_SEARCH = 		0x1;
+	private static final int MENU_MULTI =		0x2;
+	private static final int MENU_SETTINGS = 	0x3;
+	private static final int PREF_CODE =		0x6;
 	
 	private static OnSetingsChangeListener mSettingsListener;
 	private SharedPreferences mPreferences;
@@ -113,14 +115,17 @@ public class MainActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main);
+        setContentView(R.layout.main_fragments);
         
         mPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         mSearchView = new SearchView(this);
         mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
 			@Override
 			public boolean onQueryTextSubmit(String query) {
-				Log.e("asdf", query);
+				mSearchView.clearFocus();
+				((DirContentActivity)getFragmentManager()
+						.findFragmentById(R.id.content_frag))
+							.performeSearch(query);
 				
 				return true;
 			}
@@ -180,6 +185,14 @@ public class MainActivity extends Activity {
     
     public static void setOnSetingsChangeListener(OnSetingsChangeListener e) {
     	mSettingsListener = e;
+    }
+    
+    /**
+     * used to inform the user when they are holding a file to copy, zip, et cetera
+     * @param title the title to be displayed
+     */
+    public void changeActionBarTitle(String title) {
+    	getActionBar().setTitle(title);
     }
     
     @Override
