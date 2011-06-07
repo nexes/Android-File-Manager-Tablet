@@ -29,7 +29,7 @@ import android.view.MenuItem;
 import android.widget.SearchView;
 import android.util.Log;
 
-//import java.util.ArrayList;
+import java.util.ArrayList;
 
 public class MainActivity extends Activity {
 	//keys used for preference file
@@ -51,7 +51,12 @@ public class MainActivity extends Activity {
 	private ActionMode mActionMode;
 	private SearchView mSearchView;
 	
+	private EventHandler mEvHandler;
+	private FileManager mFileManger;
+	
+	
 	private ActionMode.Callback mMultiSelectAction = new ActionMode.Callback() {
+		MultiSelectHandler handler;
 		
 		@Override
 		public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
@@ -60,13 +65,17 @@ public class MainActivity extends Activity {
 		
 		@Override
 		public void onDestroyActionMode(ActionMode mode) {
-			mActionMode = null;
+			((DirContentActivity)getFragmentManager()
+					.findFragmentById(R.id.content_frag))
+						.changeMultiSelectState(false, handler);
 			
-			DirContentActivity.isMultiSelectOn(false);
+			mActionMode = null;
+			handler = null;
 		}
 		
 		@Override
 		public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+			handler = MultiSelectHandler.getInstance(MainActivity.this);
 			mode.setTitle("Multi-select Options");
 			
 			menu.add(0, 12, 0, "Delete");
@@ -74,28 +83,40 @@ public class MainActivity extends Activity {
 			menu.add(0, 14, 0, "Cut");
 			menu.add(0, 15, 0, "Send");
 			
-			DirContentActivity.isMultiSelectOn(true);
+			((DirContentActivity)getFragmentManager()
+					.findFragmentById(R.id.content_frag))
+						.changeMultiSelectState(true, handler);
 			
 			return true;
 		}
 		
 		@Override
 		public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+			ArrayList<String>files = handler.getSelectedFiles();
+			
 			switch(item.getItemId()) {
-			case 12:
-				Log.e("ACTION MODE", item.getTitle().toString());
+			case 12: /* delete */
+				mEvHandler.deleteFile(files);
+				mode.finish();
 				return true;
 			
-			case 13:
-				Log.e("ACTION MODE", item.getTitle().toString());
+			case 13: /* coppy */
+				((DirContentActivity)getFragmentManager()
+						.findFragmentById(R.id.content_frag))
+							.setCopiedFiles(files, false);
+				mode.finish();
 				return true;
 				
-			case 14:
-				Log.e("ACTION MODE", item.getTitle().toString());
+			case 14: /* cut */
+				((DirContentActivity)getFragmentManager()
+						.findFragmentById(R.id.content_frag))
+							.setCopiedFiles(files, true);
+				mode.finish();
 				return true;
 				
-			case 15:
-				Log.e("ACTION MODE", item.getTitle().toString());
+			case 15: /* send */
+				mEvHandler.sendFile(files);
+				mode.finish();
 				return true;
 			}
 			
@@ -117,15 +138,19 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_fragments);
         
+        mEvHandler = ((DirContentActivity)getFragmentManager()
+        					.findFragmentById(R.id.content_frag)).getEventHandlerInst();
+        mFileManger = ((DirContentActivity)getFragmentManager()
+							.findFragmentById(R.id.content_frag)).getFileManagerInst();
+        
         mPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         mSearchView = new SearchView(this);
         mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+        	
 			@Override
 			public boolean onQueryTextSubmit(String query) {
 				mSearchView.clearFocus();
-				((DirContentActivity)getFragmentManager()
-						.findFragmentById(R.id.content_frag))
-							.performeSearch(query);
+				mEvHandler.searchFile(mFileManger.getCurrentDir(), query);
 				
 				return true;
 			}
@@ -160,9 +185,7 @@ public class MainActivity extends Activity {
     	
     	switch(item.getItemId()) {
     	case MENU_DIR:
-    		DirContentActivity cont = ((DirContentActivity)getFragmentManager()
-    								.findFragmentById(R.id.content_frag));
-    		cont.newFolder();
+    		mEvHandler.createNewFolder(mFileManger.getCurrentDir());
     		return true;
     		
     	case MENU_MULTI:

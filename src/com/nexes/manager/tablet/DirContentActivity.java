@@ -75,9 +75,10 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	
 	private FileManager mFileMang;
 	private EventHandler mHandler;
+	private MultiSelectHandler mMultiSelect;
 	private static OnBookMarkAddListener mBookmarkList;
 	
-	private LinearLayout mPathView;
+	private LinearLayout mPathView, mMultiSelectView;
 	private GridView mGrid = null;
 	private ListView mList = null;
 	private boolean mShowGrid;
@@ -126,6 +127,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		
 		@Override
 		public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+			ArrayList<String> files = new ArrayList<String>();
 			String name = "/" + mode.getTitle().toString();
 			String path = null;
 			
@@ -141,7 +143,8 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 					return true;
 					
 				case D_MENU_DELETE:
-					mHandler.deleteFile(path);
+					files.add(path);
+					mHandler.deleteFile(files);
 					mode.finish();
 					return true;
 					
@@ -182,6 +185,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 							mHandler.copyFile(mHoldingFileList, path);
 					
 					mHoldingFile = false;
+					mCutFile = false;
 					mHoldingFileList.clear();
 					mHoldingFileList = null;
 					((MainActivity)getActivity()).changeActionBarTitle("Open Manager");
@@ -202,8 +206,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 					((MainActivity)getActivity()).changeActionBarTitle("Open Manager");
 					mode.finish();
 					return true;
-			}
-			
+			}			
 			return false;
 		}
 	};	
@@ -234,6 +237,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 
 		@Override
 		public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+			ArrayList<String> files = new ArrayList<String>();
 			String path = null;
 			String name = mode.getTitle().toString();
 			
@@ -244,7 +248,8 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			
 			switch(item.getItemId()) {
 				case F_MENU_DELETE:
-					mHandler.deleteFile(path);					
+					files.add(path);
+					mHandler.deleteFile(files);
 					mode.finish();
 					return true;
 					
@@ -278,11 +283,11 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 					return true;
 					
 				case F_MENU_SEND:
-					mHandler.sendFile(path);
+					files.add(path);
+					mHandler.sendFile(files);
 					mode.finish();
 					return true;
 			}
-			
 			mActionModeSelected = false;
 			return false;
 		}
@@ -321,7 +326,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		v.setBackgroundResource(R.color.lightgray);
 		
 		mPathView = (LinearLayout)v.findViewById(R.id.scroll_path);
-		//mDelegate = new DataAdapter(mContext, R.layout.grid_content_layout, mData);
+		mMultiSelectView = (LinearLayout)v.findViewById(R.id.multiselect_path);
 		mGrid = (GridView)v.findViewById(R.id.grid_gridview);
 		mList = (ListView)v.findViewById(R.id.list_listview);
 		
@@ -390,8 +395,8 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	@Override
 	public void onItemClick(AdapterView<?> list, View view, int pos, long id) {
 		String item_ext = "";
-		final String name;// = mData.get(pos);
-		File file;
+		final String name;
+		final File file;
 		
 		/* if we are getting data from a search result, we need to setup some
 		   vars a little differently. */
@@ -399,20 +404,33 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			String s = mData.get(pos);
 			name = s.substring(s.lastIndexOf("/") + 1, s.length());
 			file = new File(s);
-		
 		} else {
 			name = mData.get(pos);
 			file = new File(mFileMang.getCurrentDir() + "/" + name);
 		}
-		
+
+		//not working yet.
 		if(mMultiSelectOn) {
-			view.setBackgroundColor(0xff0091dc);
+			View v = mMultiSelect.addFile(file.getPath());
+			if(v == null)
+				return;
+			
+			v.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					int ret = mMultiSelect.clearFileEntry(file.getPath());
+					mMultiSelectView.removeViewAt(ret);
+				}
+			});
+			
+			mMultiSelectView.addView(v);
+			return;
 		}
 		
-		if(file.isDirectory() && !mActionModeSelected && !mMultiSelectOn) {
+		if(file.isDirectory() && !mActionModeSelected ) {
 			addBackButton(name, pos);
 
-		} else if (!file.isDirectory() && !mActionModeSelected && !mMultiSelectOn) {
+		} else if (!file.isDirectory() && !mActionModeSelected ) {
 			
 			try {
 				item_ext = name.substring(name.lastIndexOf("."), name.length());
@@ -546,6 +564,13 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		}
 	}
 	
+	/*
+	 * (non-Javadoc)
+	 * This is a callback function that is called when the user
+	 * selects an item (directory) from the dir list on the left.
+	 * This will update the contents of the dir on the right
+	 * from the path give in the variable name.
+	 */
 	@Override
 	public void onChangeLocation(String name) {
 		
@@ -562,7 +587,6 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	
 	/*
 	 * (non-Javadoc)
-	 * @see com.nexes.manager.tablet.EventHandler.OnWorkerThreadFinishedListener#onWorkerThreadComplete(int)
 	 * this will update the data shown to the user after a change to
 	 * the file system has been made from our background thread or EventHandler.
 	 */
@@ -678,25 +702,57 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	public void onSortingChanged(String state) {
 		
 	}
-	
-	//performes a search on behalf of MainActivity as
-	//MainActiviy does not have easy access to this FileManger 
-	//or EventHandler objets.
-	public void performeSearch(String query) {
-		mHandler.searchFile(mFileMang.getCurrentDir(), query);
-	}
-	
-	public void newFolder() {
-		if(!mFromSearchResult)
-			mHandler.createNewFolder(mFileMang.getCurrentDir());
-	}
-	
-	public static void isMultiSelectOn(boolean state) {
-		mMultiSelectOn = state;
+			
+	public void changeMultiSelectState(boolean state, 
+											  MultiSelectHandler handler) {
+		if(state && handler != null) {
+			mMultiSelect = handler;
+			mMultiSelectOn = state;
+			
+		} else if (!state && handler != null) {
+			mMultiSelect = handler;
+			mMultiSelect.cancelMultiSelect();
+			mMultiSelectView.removeAllViews();
+			mMultiSelectOn = state;
+		}
 	}
 	
 	public static void setOnBookMarkAddListener(OnBookMarkAddListener e) {
 		mBookmarkList = e;
+	}
+	
+	/*
+	 * This is a convience function so our applications main activity
+	 * (MainActivity.java) class can have access to our event handler
+	 * and perform file operations such as delete, rename etc. 
+	 * Event handler sits between our view and modal (FileManager)
+	 */
+	protected EventHandler getEventHandlerInst() {
+		return mHandler;
+	}
+	
+	/*
+	 * See comments for getEventHandlerInst(). Same reasoning.
+	 */
+	protected FileManager getFileManagerInst() {
+		return mFileMang;
+	}
+	
+	/*
+	 * we need to make a temp arraylist because when the
+	 * multiselect actionmode callback is finished our multiselect
+	 * object will turn off and clear the data in files
+	 */
+	protected void setCopiedFiles(ArrayList<String> files, boolean cutFile) {
+		ArrayList<String> temp = new ArrayList<String>();
+		int len = files.size();
+		
+		for(int i = 0; i < len; i++)
+			temp.add(files.get(i));
+		
+		mHoldingFile = true;
+		mCutFile = cutFile;
+		mHoldingFileList = temp;
 	}
 	
 	private void addBackButton(String name, int pos) {
@@ -737,7 +793,6 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 					
 		mDelegate.notifyDataSetChanged();	
 	}
-	
 	
 	
 	/**
@@ -826,11 +881,12 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			} else if(ext.equalsIgnoreCase("doc") || ext.equalsIgnoreCase("docx")) {
 				mHolder.mIcon.setImageResource(R.drawable.doc);
 				
-			} else if(ext.equalsIgnoreCase("xls") || ext.equalsIgnoreCase("xlsx") ||
-					ext.equalsIgnoreCase("xlsm")) {
+			} else if(ext.equalsIgnoreCase("xls")  || 
+					  ext.equalsIgnoreCase("xlsx") ||
+					  ext.equalsIgnoreCase("xlsm")) {
 				mHolder.mIcon.setImageResource(R.drawable.excel);
 				
-			} else if(ext.equalsIgnoreCase("ppt") | ext.equalsIgnoreCase("pptx")) {
+			} else if(ext.equalsIgnoreCase("ppt") || ext.equalsIgnoreCase("pptx")) {
 				mHolder.mIcon.setImageResource(R.drawable.powerpoint);
 				
 			} else if(ext.equalsIgnoreCase("zip") || ext.equalsIgnoreCase("gzip")) {
@@ -845,8 +901,10 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			} else if(ext.equalsIgnoreCase("xml") || ext.equalsIgnoreCase("html")) {
 				mHolder.mIcon.setImageResource(R.drawable.xml_html);
 				
-			} else if(ext.equalsIgnoreCase("mp4") || ext.equalsIgnoreCase("3gp") ||
-					  ext.equalsIgnoreCase("webm") || ext.equalsIgnoreCase("m4v")) {
+			} else if(ext.equalsIgnoreCase("mp4") || 
+					  ext.equalsIgnoreCase("3gp") ||
+					  ext.equalsIgnoreCase("webm") || 
+					  ext.equalsIgnoreCase("m4v")) {
 				mHolder.mIcon.setImageResource(R.drawable.movie);
 				
 			} else if(ext.equalsIgnoreCase("mp3") || ext.equalsIgnoreCase("wav") ||
