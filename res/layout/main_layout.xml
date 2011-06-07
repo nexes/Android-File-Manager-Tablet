@@ -31,7 +31,18 @@
 			android:orientation="horizontal"
 			android:layout_width="match_parent"
 			android:layout_height="match_parent">
-			
+		</LinearLayout>
+	</HorizontalScrollView>
+	<HorizontalScrollView
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:background="@color/whitegray"
+		android:scrollbars="none">
+		<LinearLayout
+			android:id="@+id/multiselect_path"
+			android:orientation="horizontal"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent">
 		</LinearLayout>
 	</HorizontalScrollView>
 		
