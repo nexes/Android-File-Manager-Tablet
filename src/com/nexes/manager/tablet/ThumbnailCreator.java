@@ -22,75 +22,70 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 
 import java.lang.ref.SoftReference;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.io.File;
 
 public class ThumbnailCreator {
 	private int mWidth;
 	private int mHeight;
-	private ArrayList<Bitmap> mCacheBitmap;
 	private SoftReference<Bitmap> mThumb;
+	private HashMap<String, Bitmap> testMap;
 
 	public ThumbnailCreator(int width, int height) {
 		mWidth = width;
 		mHeight = height;
-		mCacheBitmap = new ArrayList<Bitmap>();
+		
+		testMap = new HashMap<String, Bitmap>();
+	}
+		
+	public Bitmap isBitmapCached(String name) {
+		return testMap.get(name);
 	}
 	
-	public Bitmap hasBitmapCached(int index) {
-		if(mCacheBitmap.isEmpty())
-			return null;
-		
-		try {
-			return mCacheBitmap.get(index);
-			
-		} catch (IndexOutOfBoundsException e) {
-			e.printStackTrace();
-			return null;
-		}		
-	}
-	
-	public void clearBitmapCache() {
-		mCacheBitmap.clear();
-	}
-	
-		
-	public void setBitmapToImageView(final String imageSrc, final Handler handle, final int pos) {
-		
-		final File file = new File(imageSrc);
-		
-		if(mCacheBitmap.size() > pos && mCacheBitmap.get(pos) != null)
-			return;
+	public void createNewThumbnail(final String imageName, final Handler handler) {
 		
 		Thread thread = new Thread() {
 			public void run() {
-				synchronized (this) {
+				File file = new File(imageName);
+				
+				if (testMap.containsKey(imageName)) {
+					handler.post(new Runnable() {
+						@Override
+						public void run() {
+							Message msg = handler.obtainMessage();
+							msg.obj = testMap.get(imageName);
+							msg.sendToTarget();
+						}
+					});
+					return;
+					
+				} else {
+					
 					BitmapFactory.Options options = new BitmapFactory.Options();
 					options.inSampleSize = 16;
 					
 					mThumb = (file.length() > 100000) ?
-							 new SoftReference<Bitmap>(BitmapFactory.decodeFile(imageSrc, options)) : 
+							 new SoftReference<Bitmap>(BitmapFactory.decodeFile(imageName, options)) : 
 							 new SoftReference<Bitmap>(Bitmap.createScaledBitmap(
-									 						  BitmapFactory.decodeFile(imageSrc),
+									 						  BitmapFactory.decodeFile(imageName),
 									 						  mWidth,
 									 						  mHeight,
 									 						  false));
-					mCacheBitmap.add(mThumb.get());
-					
-					handle.post(new Runnable() {
+					testMap.put(imageName, mThumb.get());
+					handler.post(new Runnable() {
+						@Override
 						public void run() {
-							Message msg = handle.obtainMessage();
-							msg.obj = mThumb.get();
+							Message msg = handler.obtainMessage();
+							msg.obj = testMap.get(imageName);
 							msg.sendToTarget();
 						}
 					});
+					return;
 				}
 			}
 		};
-		
 		thread.start();
 	}
 }
