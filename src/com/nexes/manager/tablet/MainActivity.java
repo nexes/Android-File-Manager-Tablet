@@ -20,13 +20,16 @@ package com.nexes.manager.tablet;
 
 import android.os.Bundle;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.view.ActionMode;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.SearchView;
+import android.widget.Toast;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -50,6 +53,7 @@ public class MainActivity extends Activity {
 	private SharedPreferences mPreferences;
 	private ActionMode mActionMode;
 	private SearchView mSearchView;
+	private boolean mBackQuit = false;
 	
 	private EventHandler mEvHandler;
 	private FileManager mFileManger;
@@ -64,7 +68,7 @@ public class MainActivity extends Activity {
 		}
 		
 		@Override
-		public void onDestroyActionMode(ActionMode mode) {
+		public void onDestroyActionMode(ActionMode mode) {			
 			((DirContentActivity)getFragmentManager()
 					.findFragmentById(R.id.content_frag))
 						.changeMultiSelectState(false, handler);
@@ -101,6 +105,7 @@ public class MainActivity extends Activity {
 				return true;
 			
 			case 13: /* coppy */
+				getActionBar().setTitle("Holding " + files.size() + " File");
 				((DirContentActivity)getFragmentManager()
 						.findFragmentById(R.id.content_frag))
 							.setCopiedFiles(files, false);
@@ -108,6 +113,7 @@ public class MainActivity extends Activity {
 				return true;
 				
 			case 14: /* cut */
+				getActionBar().setTitle("Holding " + files.size() + " File");
 				((DirContentActivity)getFragmentManager()
 						.findFragmentById(R.id.content_frag))
 							.setCopiedFiles(files, true);
@@ -179,6 +185,7 @@ public class MainActivity extends Activity {
     	
     	return true;
     }
+
     
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -204,6 +211,20 @@ public class MainActivity extends Activity {
     	}
     	
     	return super.onOptionsItemSelected(item);
+    }
+    
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+    	if (keyCode == KeyEvent.KEYCODE_BACK) {
+    		if (mBackQuit) {
+    			return super.onKeyUp(keyCode, event);
+    		} else {
+    			Toast.makeText(this, "Press back again to quit", Toast.LENGTH_SHORT).show();
+    			mBackQuit = true;
+    			return true;
+    		}    	
+    	}
+    	return super.onKeyUp(keyCode, event);
     }
     
     public static void setOnSetingsChangeListener(OnSetingsChangeListener e) {

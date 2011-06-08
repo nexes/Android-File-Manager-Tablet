@@ -61,8 +61,6 @@ public class EventHandler {
 		 * @param results the results of the work
 		 */
 		public void onWorkerThreadComplete(int type, ArrayList<String> results);
-		
-		
 	}
 	
 	
@@ -75,10 +73,19 @@ public class EventHandler {
 		mThreadListener = e;
 	}
 	
-	public void deleteFile(final String path) {
-		String name = path.substring(path.lastIndexOf("/") + 1, path.length());
-		AlertDialog.Builder b = new AlertDialog.Builder(mContext);
+	public void deleteFile(final ArrayList<String> path) {
+		final String[] files;
+		String name;
 		
+		if(path.size() == 1)
+			name = path.get(0).substring(path.get(0).lastIndexOf("/") + 1,
+										 path.get(0).length());
+		else
+			name = path.size() + " files";
+		
+		files =  buildStringArray(path);
+		
+		AlertDialog.Builder b = new AlertDialog.Builder(mContext);
 		b.setTitle("Deleting " + name)
 		 .setMessage("Deleting " + name + " cannot be undone.\nAre you sure" +
 					 " you want to continue?")
@@ -86,7 +93,8 @@ public class EventHandler {
 		 .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				new BackgroundWork(DELETE_TYPE).execute(path);
+				
+				new BackgroundWork(DELETE_TYPE).execute(files);
 			}
 		})
 		.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -178,12 +186,18 @@ public class EventHandler {
 		.setIcon(R.drawable.download).create().show();
 	}
 	
-	public void sendFile(String path) {
-		String name = path.substring(path.lastIndexOf("/") + 1, path.length());
-		final String filePath = path;
-		final File file = new File(path);
+	public void sendFile(final ArrayList<String> path) {
+		String name;
 		CharSequence[] list = {"Bluetooth", "Email"};
+		final String[] files = buildStringArray(path);
+		final int num = path.size();
 		
+		if(num == 1)
+			name = path.get(0).substring(path.get(0).lastIndexOf("/") + 1,
+										 path.get(0).length());
+		else
+			name = path.size() + " files.";
+				
 		AlertDialog.Builder b = new AlertDialog.Builder(mContext);
 		b.setTitle("Sending " + name)
 		 .setIcon(R.drawable.download)
@@ -194,16 +208,28 @@ public class EventHandler {
 				switch(which) {
 					case 0:
 						Intent bt = new Intent(mContext, BluetoothActivity.class);
-						bt.putExtra("path", filePath);
+						
+						bt.putExtra("paths", files);
 						mContext.startActivity(bt);
 						break;
 						
 					case 1:
+						ArrayList<Uri> uris = new ArrayList<Uri>();
 						Intent mail = new Intent();
-						
-						mail.setAction(android.content.Intent.ACTION_SEND);
 						mail.setType("application/mail");
-						mail.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
+						
+						if(num == 1) {
+							mail.setAction(android.content.Intent.ACTION_SEND);
+							mail.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(files[0])));
+							mContext.startActivity(mail);
+							break;
+						}
+						
+						for(int i = 0; i < num; i++)
+							uris.add(Uri.fromFile(new File(files[i])));
+						
+						mail.setAction(android.content.Intent.ACTION_SEND_MULTIPLE);
+						mail.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
 						mContext.startActivity(mail);
 						break;
 				}
@@ -272,6 +298,16 @@ public class EventHandler {
 		String orgDir = zipFile.substring(0, zipFile.lastIndexOf("/"));
 		
 		new BackgroundWork(UNZIPTO_TYPE).execute(name, toDir, orgDir);
+	}
+	
+	private String[] buildStringArray(ArrayList<String> array) {
+		int len = array.size();
+		String[] a = new String[len];
+				
+		for(int i = 0; i < len; i++)
+			a[i] = array.get(i);
+		
+		return a;
 	}
 		
 	
