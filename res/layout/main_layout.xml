@@ -33,6 +33,26 @@
 			android:layout_height="match_parent">
 		</LinearLayout>
 	</HorizontalScrollView>
+		<ListView
+			android:id="@+id/list_listview"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:layout_weight="1"
+			android:drawSelectorOnTop="true"
+			android:visibility="gone">
+		</ListView>		
+		<GridView
+			android:id="@+id/grid_gridview"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:layout_weight="1"
+			android:verticalSpacing="30dp"
+			android:horizontalSpacing="30dp"
+			android:columnWidth="120dp"
+			android:numColumns="auto_fit"
+			android:stretchMode="columnWidth"
+			android:gravity="center"
+			android:visibility="gone"/>
 	<HorizontalScrollView
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
@@ -45,23 +65,4 @@
 			android:layout_height="match_parent">
 		</LinearLayout>
 	</HorizontalScrollView>
-		
-		<ListView
-			android:id="@+id/list_listview"
-			android:layout_width="match_parent"
-			android:layout_height="match_parent"
-			android:drawSelectorOnTop="true"
-			android:visibility="gone">
-		</ListView>		
-		<GridView
-			android:id="@+id/grid_gridview"
-			android:layout_width="match_parent"
-			android:layout_height="match_parent"
-			android:verticalSpacing="30dp"
-			android:horizontalSpacing="30dp"
-			android:columnWidth="120dp"
-			android:numColumns="auto_fit"
-			android:stretchMode="columnWidth"
-			android:gravity="center"
-			android:visibility="gone"/>
 </LinearLayout>

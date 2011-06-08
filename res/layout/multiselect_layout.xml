@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" ?>
 <!-- 
 	Open Manager for Tablets, an open source file manager for the Android system
     Copyright (C) 2011  Joe Berria <nexesdevelopment@gmail.com>
@@ -16,34 +16,26 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  -->
-			  
+
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:orientation="horizontal"
+	android:orientation="vertical"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:paddingLeft="8dp"
-	android:paddingTop="8dp"
-	android:paddingBottom="8dp"
-	android:background="#00000000">
+	android:gravity="center_horizontal">
 	
 	<ImageView
-		android:id="@+id/list_icon"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content" 
-		android:layout_weight="0"/>
+		android:id="@+id/multi_icon"
+		android:scaleX="0.75"
+		android:scaleY="0.75"
+		android:layout_height="wrap_content"
+		android:layout_width="wrap_content"/>
 	<TextView
-		android:id="@+id/list_name"
+		android:id="@+id/multi_text"
 		android:layout_width="wrap_content"
 		android:layout_height="wrap_content"
-		android:paddingLeft="10dp"
-		android:layout_weight="1"
-		android:textColor="@color/white" 
-		android:textAppearance="?android:attr/textAppearanceLarge"/>
-	<ImageView
-		android:id="@+id/list_arrow"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:visibility="gone"
-		android:src="@drawable/indicate"/>
-	
+		android:paddingLeft="4dip"
+		android:paddingRight="4dip"
+		android:minLines="2"
+		android:textColor="@color/white"
+		android:textAppearance="?android:attr/textAppearanceSmall"/>
 </LinearLayout>

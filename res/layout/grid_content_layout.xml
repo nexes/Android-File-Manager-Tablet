@@ -37,6 +37,4 @@
 		android:maxLines="2"
 		android:textColor="@color/white"
 		android:textAppearance="?android:attr/textAppearanceMedium"/>
-	
-
 </LinearLayout>
