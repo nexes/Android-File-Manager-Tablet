@@ -20,7 +20,6 @@ package com.nexes.manager.tablet;
 
 import android.os.Bundle;
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
@@ -33,15 +32,9 @@ import android.widget.Toast;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Map;
 
-public class MainActivity extends Activity {
-	//keys used for preference file
-	private static final String PREF_LIST_KEY =		"pref_dirlist";
-	private static final String PREF_HIDDEN_KEY = 	"pref_hiddenFiles";
-	private static final String PREF_THUMB_KEY	=	"pref_thumbnail";
-	private static final String PREF_VIEW_KEY =		"pref_view";
-	private static final String PREF_SORT_KEY = 	"pref_sorting";
-	
+public class MainActivity extends Activity {	
 	//menu IDs
 	private static final int MENU_DIR = 		0x0;
 	private static final int MENU_SEARCH = 		0x1;
@@ -53,6 +46,7 @@ public class MainActivity extends Activity {
 	private SharedPreferences mPreferences;
 	private ActionMode mActionMode;
 	private SearchView mSearchView;
+	private ArrayList<String> mHeldFiles;
 	private boolean mBackQuit = false;
 	
 	private EventHandler mEvHandler;
@@ -98,17 +92,29 @@ public class MainActivity extends Activity {
 		public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
 			ArrayList<String>files = handler.getSelectedFiles();
 			
+			if(mHeldFiles == null)
+				mHeldFiles = new ArrayList<String>();
+			
+			mHeldFiles.clear();
+			
+			for(String s : files)
+				mHeldFiles.add(s);
+			
 			switch(item.getItemId()) {
 			case 12: /* delete */
-				mEvHandler.deleteFile(files);
+				mEvHandler.deleteFile(mHeldFiles);
 				mode.finish();
 				return true;
 			
-			case 13: /* coppy */
+			case 13: /* copy */
 				getActionBar().setTitle("Holding " + files.size() + " File");
 				((DirContentActivity)getFragmentManager()
 						.findFragmentById(R.id.content_frag))
-							.setCopiedFiles(files, false);
+							.setCopiedFiles(mHeldFiles, false);
+				
+				Toast.makeText(MainActivity.this, 
+							   "Tap the upper left corner to see your held files",
+							   Toast.LENGTH_LONG).show();
 				mode.finish();
 				return true;
 				
@@ -116,12 +122,16 @@ public class MainActivity extends Activity {
 				getActionBar().setTitle("Holding " + files.size() + " File");
 				((DirContentActivity)getFragmentManager()
 						.findFragmentById(R.id.content_frag))
-							.setCopiedFiles(files, true);
+							.setCopiedFiles(mHeldFiles, true);
+				
+				Toast.makeText(MainActivity.this, 
+						   "Tap the upper left corner to see your held files",
+						   Toast.LENGTH_LONG).show();
 				mode.finish();
 				return true;
 				
 			case 15: /* send */
-				mEvHandler.sendFile(files);
+				mEvHandler.sendFile(mHeldFiles);
 				mode.finish();
 				return true;
 			}
@@ -166,6 +176,12 @@ public class MainActivity extends Activity {
 				return false;
 			}
 		});
+        
+        /* read and display the users preferences */
+        mSettingsListener.onHiddenFilesChanged(mPreferences.getBoolean(SettingsActivity.PREF_HIDDEN_KEY, false));
+		mSettingsListener.onThumbnailChanged(mPreferences.getBoolean(SettingsActivity.PREF_THUMB_KEY, false));
+		mSettingsListener.onViewChanged(mPreferences.getString(SettingsActivity.PREF_VIEW_KEY, "grid"));
+		mSettingsListener.onSortingChanged(mPreferences.getString(SettingsActivity.PREF_SORT_KEY, "type"));
     }
     
     @Override
@@ -186,11 +202,20 @@ public class MainActivity extends Activity {
     	return true;
     }
 
-    
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
     	
     	switch(item.getItemId()) {
+    	case android.R.id.home:
+    		if (mHeldFiles != null) {
+    			DialogHandler dialog = DialogHandler.newDialog(DialogHandler.HOLDINGFILE_DIALOG, this);
+    			dialog.setHoldingFileList(mHeldFiles);
+    			
+    			dialog.show(getFragmentManager(), "dialog");
+    		}
+    		return true;
+    		
     	case MENU_DIR:
     		mEvHandler.createNewFolder(mFileManger.getCurrentDir());
     		return true;
@@ -231,22 +256,29 @@ public class MainActivity extends Activity {
     	mSettingsListener = e;
     }
     
-    /**
+    /*
      * used to inform the user when they are holding a file to copy, zip, et cetera
+     * When the user does something with the held files (from copy or cut) this is 
+     * called to reset the apps title. When that happens we will get rid of the cached
+     * held files if there are any.  
      * @param title the title to be displayed
      */
     public void changeActionBarTitle(String title) {
+    	if (title.equals("Open Manager") && mHeldFiles != null) {
+	    	mHeldFiles.clear();
+	    	mHeldFiles = null;
+    	}
     	getActionBar().setTitle(title);
     }
     
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     	if(requestCode == PREF_CODE) {
-    		//write this better, check if you need to call these methods eg getAll
-    		mSettingsListener.onHiddenFilesChanged(mPreferences.getBoolean(PREF_HIDDEN_KEY, false));
-    		mSettingsListener.onThumbnailChanged(mPreferences.getBoolean(PREF_THUMB_KEY, false));
-    		mSettingsListener.onViewChanged(mPreferences.getString(PREF_VIEW_KEY, "grid"));
-    		mSettingsListener.onSortingChanged(mPreferences.getString(PREF_SORT_KEY, "alpha"));
+    		//this could be done better.
+    		mSettingsListener.onHiddenFilesChanged(mPreferences.getBoolean(SettingsActivity.PREF_HIDDEN_KEY, false));
+    		mSettingsListener.onThumbnailChanged(mPreferences.getBoolean(SettingsActivity.PREF_THUMB_KEY, false));
+    		mSettingsListener.onViewChanged(mPreferences.getString(SettingsActivity.PREF_VIEW_KEY, "grid"));
+    		mSettingsListener.onSortingChanged(mPreferences.getString(SettingsActivity.PREF_SORT_KEY, "alpha"));
     	}
     }
     
@@ -255,11 +287,11 @@ public class MainActivity extends Activity {
     	super.onPause();
     	String list = ((DirListActivity)getFragmentManager()
     					.findFragmentById(R.id.list_frag)).getDirListString();
-    	String saved = mPreferences.getString(PREF_LIST_KEY, "");
+    	String saved = mPreferences.getString(SettingsActivity.PREF_LIST_KEY, "");
     	
     	if(!list.equals(saved)) {
     		SharedPreferences.Editor e = mPreferences.edit();
-    		e.putString(PREF_LIST_KEY, list);
+    		e.putString(SettingsActivity.PREF_LIST_KEY, list);
     		e.commit();    		
     	}
     }

@@ -94,6 +94,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	private boolean mHoldingZip;
 	private boolean mCutFile;
 	private boolean mFromSearchResult;
+	private boolean mShowThumbnails;
 	private int mBackPathIndex;
 	
 	private ActionMode.Callback mFolderOptActionMode = new ActionMode.Callback() {
@@ -316,6 +317,9 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 									.getDefaultSharedPreferences(mContext))
 										.getString("pref_view", "grid"));
 		
+		mShowThumbnails = PreferenceManager.getDefaultSharedPreferences(mContext)
+							.getBoolean(SettingsActivity.PREF_THUMB_KEY, false);
+		
 		MainActivity.setOnSetingsChangeListener(this);
 		DirListActivity.setOnChangeLocationListener(this);
 	}
@@ -326,9 +330,10 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		v.setBackgroundResource(R.color.lightgray);
 		
 		mPathView = (LinearLayout)v.findViewById(R.id.scroll_path);
-		mMultiSelectView = (LinearLayout)v.findViewById(R.id.multiselect_path);
 		mGrid = (GridView)v.findViewById(R.id.grid_gridview);
 		mList = (ListView)v.findViewById(R.id.list_listview);
+		mMultiSelectView = (LinearLayout)v.findViewById(R.id.multiselect_path);
+		
 		
 		if(mShowGrid) {
 			mDelegate = new DataAdapter(mContext, R.layout.grid_content_layout, mData);
@@ -409,7 +414,6 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			file = new File(mFileMang.getCurrentDir() + "/" + name);
 		}
 
-		//not working yet.
 		if(mMultiSelectOn) {
 			View v = mMultiSelect.addFile(file.getPath());
 			if(v == null)
@@ -509,7 +513,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			
 			/* HTML XML file */
 	    	else if(item_ext.equalsIgnoreCase(".html") || 
-	    			item_ext.equalsIgnoreCase(".html")) {
+	    			item_ext.equalsIgnoreCase(".xml")) {
 	    		
 	    		if(file.exists()) {
 	    			Intent htmlIntent = new Intent();
@@ -625,12 +629,31 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	
 	@Override
 	public void onHiddenFilesChanged(boolean state) {
+		mFileMang.setShowHiddenFiles(state);
 		
+		mData = mFileMang.getNextDir(mFileMang.getCurrentDir(), true);
+		mDelegate.notifyDataSetChanged();
 	}
 
 	@Override
 	public void onThumbnailChanged(boolean state) {
+		mShowThumbnails = state;
+		mDelegate.notifyDataSetChanged();
+	}
+	
+	@Override
+	public void onSortingChanged(String state) {		
+		if (state.equals("none"))
+			mFileMang.setSortType(0);
+		else if (state.equals("alpha"))
+			mFileMang.setSortType(1);
+		else if (state.equals("type"))
+			mFileMang.setSortType(2);
+		else if (state.equals("size"))
+			mFileMang.setSortType(3);
 		
+		mData = mFileMang.getNextDir(mFileMang.getCurrentDir(), true);
+		mDelegate.notifyDataSetChanged();
 	}
 
 	@Override
@@ -696,11 +719,6 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			mList.setVisibility(View.GONE);
 			mShowGrid = true;
 		}
-	}
-
-	@Override
-	public void onSortingChanged(String state) {
-		
 	}
 			
 	public void changeMultiSelectState(boolean state, 
@@ -778,10 +796,10 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 					while(index < mPathView.getChildCount() - 1) 
 						mPathView.removeViewAt(mPathView.getChildCount() - 1);
 					
-					mBackPathIndex = index + 1;		
+					mBackPathIndex = index + 1;
+					
 					subPath = path.substring(0, path.lastIndexOf(bname));					
 					mData = mFileMang.getNextDir(subPath + bname, true);
-					
 					mDelegate.notifyDataSetChanged();
 				}
 			}
@@ -805,14 +823,11 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
     	
 		private DataViewHolder mHolder;
 		private ThumbnailCreator mThumbnail;
-		private String mTempDir;
 		private String mName;
 		
 		public DataAdapter(Context context, int layout, ArrayList<String> data) {
-			super(context, layout, data);
-			
+			super(context, layout, data);			
 			mThumbnail = new ThumbnailCreator(72, 72);
-			mTempDir = mFileMang.getCurrentDir();
 		}
 		
 		@Override
@@ -820,6 +835,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			String ext;
 			File file = null;
 			String current = mFileMang.getCurrentDir();
+			final int pos = position;
 			
 			/* if we are getting data from a search result, we need to set
 			   up some vars differently than normal. */
@@ -832,13 +848,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 				mName = mData.get(position);
 				file = new File(current + "/" + mName);
 			}
-			
-			/* clear the thumbnail cache when we leave a dir */
-			if(!mTempDir.equals(current)) {
-				mThumbnail.clearBitmapCache();
-				mTempDir = current;
-			}
-			
+				
 			try {
 				ext = mName.substring(mName.lastIndexOf('.') + 1, mName.length());
 				
@@ -914,27 +924,28 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 				
 			} else if(ext.equalsIgnoreCase("jpeg") || ext.equalsIgnoreCase("png") ||
 					  ext.equalsIgnoreCase("jpg")  || ext.equalsIgnoreCase("gif")) {
-				final int pos = position;
-				//FIX THIS, THIS DOESN'T WORK RIGHT
-				if(file.length() > 0) {
-					Bitmap thumb = mThumbnail.hasBitmapCached(pos);
+
+				if(file.length() > 0 && mShowThumbnails) {
+					Bitmap thumb = mThumbnail.isBitmapCached(file.getPath());
 					
-					if(thumb == null) {
+					if (thumb == null) {
 						Handler handle = new Handler(new Handler.Callback() {
-							@Override
 							public boolean handleMessage(Message msg) {
-								mHolder.mIcon.setImageBitmap((Bitmap)msg.obj);
+								mHolder.mIcon.setImageBitmap((Bitmap)msg.obj);								
 								notifyDataSetChanged();
+								
 								return true;
 							}
 						});
 						
-						mThumbnail.setBitmapToImageView(file.getPath(), 
-														handle,
-														pos);
+						mThumbnail.createNewThumbnail(file.getPath(), handle);
+						
 					} else {
 						mHolder.mIcon.setImageBitmap(thumb);
 					}
+					
+				} else {
+					mHolder.mIcon.setImageResource(R.drawable.photo);
 				}
 				
 			} else {

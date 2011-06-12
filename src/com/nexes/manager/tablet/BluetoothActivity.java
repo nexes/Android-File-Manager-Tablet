@@ -48,10 +48,17 @@ import android.util.Log;
 import java.util.Set;
 import java.util.ArrayList;
 import java.util.UUID;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.io.IOException;
+
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
 
 
 public class BluetoothActivity extends Activity implements OnClickListener,
@@ -69,7 +76,7 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 	private TextView mMessageView;
 	private Button mButton;
 	
-	private String mFilePath;
+	private String[] mFilePaths;
 
 	/*
 	 * String name, is the variable that will contain the name and MAC address
@@ -113,7 +120,7 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 		setTheme(android.R.style.Theme_Holo_Dialog_MinWidth);
 		setContentView(R.layout.bluetooth_layout);
 		
-		mFilePath = getIntent().getExtras().getString("path");
+		mFilePaths = getIntent().getExtras().getStringArray("paths");
 		
 		mDeviceData = new ArrayList<String>();
 		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -122,7 +129,7 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 			AlertDialog.Builder b = new AlertDialog.Builder(this);
 			b.setTitle("Bluetooth error")
 			 .setMessage("This device does not support bluetooth")
-			 .setIcon(R.drawable.download)
+			 .setIcon(R.drawable.download_md)
 			 .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
 				
 				@Override
@@ -203,7 +210,7 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 		
 		deviceName = name.substring(0, name.lastIndexOf('\n'));
 		
-		//don't discover devices when tyring to pair or connect.
+		//don't discover devices when trying to pair or connect.
 		if(mBluetoothAdapter.isDiscovering())
 			mBluetoothAdapter.cancelDiscovery();
 		
@@ -271,7 +278,6 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 	
 	
 	
-	
 	/**
 	 * 
 	 * @author Joe Berria
@@ -279,14 +285,16 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 	 */
 	private class ClientSocketThread extends Thread {
 		private static final String DEV_UUID = "00001101-0000-1000-8000-00805F9B34FB";
-		private BluetoothDevice mRemoteDevice;
-		private BluetoothSocket mSocket;
+		private BluetoothDevice mRemoteDevice = null;
+		private BluetoothSocket mSocket = null;
 		private String mMACAddres;
 		
 		
 		public ClientSocketThread(String device) {
 			mMACAddres = device.substring(device.lastIndexOf('\n') + 1,
-										 device.lastIndexOf(":"));
+										 device.lastIndexOf(":")).toUpperCase();
+			
+			Log.e("CLIENTSOCKETTHREAD", "mac address is " + mMACAddres);
 			
 			try {
 				mRemoteDevice = mBluetoothAdapter.getRemoteDevice(mMACAddres);
@@ -298,7 +306,10 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 			
 			} catch (IOException e) {
 				Log.e("ClientSocketThread", "ioexception " + e.getMessage());
-			}			
+			}
+			
+			if(mSocket == null)
+				Log.e("CLIENTSOCKETTHREAD", "mSocket is null");
 		}
 		
 		@Override
@@ -317,6 +328,7 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 				
 			} catch (IOException e) {
 				Log.e("ClientSocketThread", "catch mSocket.connect() = " + e.getMessage());
+				e.printStackTrace();
 				
 				try {
 					mSocket.close();
@@ -337,7 +349,7 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 		private void communicateData(BluetoothSocket socket) {
 			OutputStream writeStrm = null;
 			FileInputStream readStrm = null;
-			File file = new File(mFilePath);
+			File file = new File(mFilePaths[0]);
 			byte[] buffer = new byte[1024];
 			
 			Log.e("ClientSocketThread", "communicateData is called");

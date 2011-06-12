@@ -27,7 +27,6 @@ import android.content.DialogInterface;
 import android.preference.PreferenceManager;
 import android.app.ListFragment;
 import android.app.AlertDialog;
-import android.graphics.Color;
 import android.view.ContextMenu;
 import android.view.View;
 import android.view.ViewGroup;
@@ -93,8 +92,9 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 		
 		ListView lv = getListView();		
 		lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-		lv.setCacheColorHint(Color.TRANSPARENT);
+		lv.setCacheColorHint(0x00000000);
 		lv.setDrawSelectorOnTop(true);
+		lv.setBackgroundResource(R.drawable.listgradback);
 		
 		mDelegate = new DirListAdapter(mContext, R.layout.dir_list_layout, mDirList);
 		registerForContextMenu(lv);
@@ -233,16 +233,16 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 				mHolder.mIcon.setImageResource(R.drawable.sdcard);
 				break;
 			case 2:
-				mHolder.mIcon.setImageResource(R.drawable.download);
+				mHolder.mIcon.setImageResource(R.drawable.download_md);
 				break;
 			case 3:
-				mHolder.mIcon.setImageResource(R.drawable.music_med);
+				mHolder.mIcon.setImageResource(R.drawable.music_md);
 				break;
 			case 4:
-				mHolder.mIcon.setImageResource(R.drawable.movie_med);
+				mHolder.mIcon.setImageResource(R.drawable.movie_md);
 				break;
 			case 5:
-				mHolder.mIcon.setImageResource(R.drawable.camera);
+				mHolder.mIcon.setImageResource(R.drawable.photo_md);
 				break;
 			case 6:
 				mHolder.mIcon.setImageResource(R.drawable.favorites);
@@ -250,7 +250,7 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 				break;
 				
 			default:
-				mHolder.mIcon.setImageResource(R.drawable.folder);
+				mHolder.mIcon.setImageResource(R.drawable.folder_md);
 				break;
 			}
 			

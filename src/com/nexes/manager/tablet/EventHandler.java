@@ -89,7 +89,7 @@ public class EventHandler {
 		b.setTitle("Deleting " + name)
 		 .setMessage("Deleting " + name + " cannot be undone.\nAre you sure" +
 					 " you want to continue?")
-		 .setIcon(R.drawable.download)
+		 .setIcon(R.drawable.download_md)
 		 .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
@@ -144,7 +144,7 @@ public class EventHandler {
 		.setView(view)
 		.setTitle("Rename " + name)
 		.setCancelable(false)
-		.setIcon(R.drawable.download).create().show();
+		.setIcon(R.drawable.download_md).create().show();
 	}
 
 	/**
@@ -183,7 +183,7 @@ public class EventHandler {
 		.setView(view)
 		.setTitle("Create a new Folder")
 		.setCancelable(false)
-		.setIcon(R.drawable.download).create().show();
+		.setIcon(R.drawable.download_md).create().show();
 	}
 	
 	public void sendFile(final ArrayList<String> path) {
@@ -200,7 +200,7 @@ public class EventHandler {
 				
 		AlertDialog.Builder b = new AlertDialog.Builder(mContext);
 		b.setTitle("Sending " + name)
-		 .setIcon(R.drawable.download)
+		 .setIcon(R.drawable.download_md)
 		 .setItems(list, new DialogInterface.OnClickListener() {
 			
 			@Override
@@ -272,7 +272,7 @@ public class EventHandler {
 		b.setTitle("Unzip file " + zipFile)
 		 .setMessage("Would you like to unzip " + zipFile +
 				 	 " here or some other folder?")
-		 .setIcon(R.drawable.download)
+		 .setIcon(R.drawable.download_md)
 		 .setPositiveButton("Unzip here", new DialogInterface.OnClickListener() {
 			
 			@Override

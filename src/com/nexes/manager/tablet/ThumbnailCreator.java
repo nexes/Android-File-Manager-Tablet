@@ -22,6 +22,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 
 import java.lang.ref.SoftReference;
 import java.util.HashMap;
@@ -31,61 +32,52 @@ public class ThumbnailCreator {
 	private int mWidth;
 	private int mHeight;
 	private SoftReference<Bitmap> mThumb;
-	private HashMap<String, Bitmap> testMap;
+	private static HashMap<String, Bitmap> cacheMap;
 
 	public ThumbnailCreator(int width, int height) {
-		mWidth = width;
 		mHeight = height;
+		mWidth = mHeight * (4/3);
 		
-		testMap = new HashMap<String, Bitmap>();
+		cacheMap = new HashMap<String, Bitmap>();
 	}
 		
 	public Bitmap isBitmapCached(String name) {
-		return testMap.get(name);
+		return cacheMap.get(name);
 	}
-	
+
 	public void createNewThumbnail(final String imageName, final Handler handler) {
 		
 		Thread thread = new Thread() {
 			public void run() {
 				File file = new File(imageName);
 				
-				if (testMap.containsKey(imageName)) {
-					handler.post(new Runnable() {
-						@Override
-						public void run() {
-							Message msg = handler.obtainMessage();
-							msg.obj = testMap.get(imageName);
-							msg.sendToTarget();
-						}
-					});
-					return;
-					
-				} else {
-					
-					BitmapFactory.Options options = new BitmapFactory.Options();
-					options.inSampleSize = 16;
-					
-					mThumb = (file.length() > 100000) ?
-							 new SoftReference<Bitmap>(BitmapFactory.decodeFile(imageName, options)) : 
-							 new SoftReference<Bitmap>(Bitmap.createScaledBitmap(
-									 						  BitmapFactory.decodeFile(imageName),
-									 						  mWidth,
-									 						  mHeight,
-									 						  false));
-					testMap.put(imageName, mThumb.get());
-					handler.post(new Runnable() {
-						@Override
-						public void run() {
-							Message msg = handler.obtainMessage();
-							msg.obj = testMap.get(imageName);
-							msg.sendToTarget();
-						}
-					});
-					return;
-				}
+				BitmapFactory.Options options = new BitmapFactory.Options();
+				options.inSampleSize = 32;
+				options.outWidth = mWidth;
+				options.outHeight = mHeight;
+									
+				mThumb = (file.length() > 100000) ?
+						 new SoftReference<Bitmap>(BitmapFactory.decodeFile(imageName, options)) : 
+						 new SoftReference<Bitmap>(Bitmap.createScaledBitmap(
+								 						  BitmapFactory.decodeFile(imageName),
+								 						  mWidth,
+								 						  mHeight,
+								 						  false));
+				cacheMap.put(imageName, mThumb.get());
+				handler.post(new Runnable() {
+					@Override
+					public void run() {
+						Message msg = handler.obtainMessage();
+						msg.obj = cacheMap.get(imageName);
+						msg.sendToTarget();
+					}
+				});
 			}
 		};
 		thread.start();
 	}
+
 }
+
+
+

@@ -52,9 +52,10 @@ import android.util.Log;
  */
 public class FileManager {
 	private static final int BUFFER = 		2048;
-	private static final int SORT_NONE = 	0;
-	private static final int SORT_ALPHA = 	1;
-	private static final int SORT_TYPE = 	2;
+	private static final int SORT_NONE = 	0x00;
+	private static final int SORT_ALPHA = 	0x01;
+	private static final int SORT_TYPE = 	0x02;
+	private static final int SORT_SIZE = 	0x03;
 	
 	private boolean mShowHiddenFiles = false;
 	private int mSortType = SORT_ALPHA;
@@ -461,14 +462,25 @@ public class FileManager {
 	}
 	
 	
-	private static final Comparator alph = new Comparator<String>() {
+	private final Comparator alpha = new Comparator<String>() {
 		@Override
 		public int compare(String arg0, String arg1) {
 			return arg0.toLowerCase().compareTo(arg1.toLowerCase());
 		}
 	};
 	
-	private static final Comparator type = new Comparator<String>() {
+	private final Comparator size = new Comparator<String>() {
+		@Override
+		public int compare(String arg0, String arg1) {
+			String dir = mPathStack.peek();
+			Long first = new File(dir + "/" + arg0).length();
+			Long second = new File(dir + "/" + arg0).length();
+			
+			return (int) (first - second);
+		}
+	};
+	
+	private final Comparator type = new Comparator<String>() {
 		@Override
 		public int compare(String arg0, String arg1) {
 			String ext = null;
@@ -524,32 +536,51 @@ public class FileManager {
 					break;
 					
 				case SORT_ALPHA:
-					Object[] tt = mDirContent.toArray();
+					int i = 0;
+					Object[] alpha_ar = mDirContent.toArray();
 					mDirContent.clear();
 					
-					Arrays.sort(tt, alph);
+					Arrays.sort(alpha_ar, alpha);
 					
-					for (Object a : tt){
+					for (Object a : alpha_ar)
 						mDirContent.add((String)a);
-					}
+					
 					break;
 					
-				case SORT_TYPE:
-					Object[] t = mDirContent.toArray();
+				case SORT_SIZE:
+					Object[] size_ar = mDirContent.toArray();
 					String dir = mPathStack.peek();
 					
-					Arrays.sort(t, type);
+					Arrays.sort(size_ar, size);
 					mDirContent.clear();
-					
-					for (Object a : t){
+					for (Object a : size_ar){
 						if(new File(dir + "/" + (String)a).isDirectory())
 							mDirContent.add(0, (String)a);
 						else
 							mDirContent.add((String)a);
 					}
 					break;
+					
+				case SORT_TYPE:
+					int dirindex = 0;
+					int fileindex = dirindex;
+					Object[] type_ar = mDirContent.toArray();
+					String current = mPathStack.peek();
+					
+					Arrays.sort(type_ar, type);
+					mDirContent.clear();
+					
+					for (Object a : type_ar){
+						if(new File(current + "/" + (String)a).isDirectory())
+							mDirContent.add(dirindex++, (String)a);
+						else
+							mDirContent.add(fileindex, (String)a);
+						
+						fileindex = dirindex;
+					}
+					break;
 			}
-				
+			
 		} else {
 			mDirContent.add("Emtpy");
 		}

@@ -28,34 +28,44 @@ public final class R {
     }
     public static final class drawable {
         public static final int apk=0x7f020000;
-        public static final int bluetooth=0x7f020001;
-        public static final int camera=0x7f020002;
+        public static final int apk_md=0x7f020001;
+        public static final int bluetooth=0x7f020002;
         public static final int cellphone=0x7f020003;
         public static final int computer=0x7f020004;
         public static final int doc=0x7f020005;
-        public static final int download=0x7f020006;
-        public static final int drive=0x7f020007;
-        public static final int excel=0x7f020008;
-        public static final int favorites=0x7f020009;
-        public static final int folder=0x7f02000a;
-        public static final int folder_large=0x7f02000b;
-        public static final int folder_large_full=0x7f02000c;
-        public static final int icon=0x7f02000d;
-        public static final int indicate=0x7f02000e;
-        public static final int movie=0x7f02000f;
-        public static final int movie_med=0x7f020010;
-        public static final int multiselect=0x7f020011;
-        public static final int music=0x7f020012;
-        public static final int music_med=0x7f020013;
-        public static final int newfolder=0x7f020014;
-        public static final int pdf=0x7f020015;
-        public static final int powerpoint=0x7f020016;
-        public static final int sdcard=0x7f020017;
-        public static final int search=0x7f020018;
-        public static final int settings_actbar=0x7f020019;
-        public static final int unknown=0x7f02001a;
-        public static final int xml_html=0x7f02001b;
-        public static final int zip=0x7f02001c;
+        public static final int doc_md=0x7f020006;
+        public static final int download_md=0x7f020007;
+        public static final int drive=0x7f020008;
+        public static final int excel=0x7f020009;
+        public static final int excel_md=0x7f02000a;
+        public static final int favorites=0x7f02000b;
+        public static final int folder_large=0x7f02000c;
+        public static final int folder_large_full=0x7f02000d;
+        public static final int folder_md=0x7f02000e;
+        public static final int icon=0x7f02000f;
+        public static final int indicate=0x7f020010;
+        public static final int listgradback=0x7f020011;
+        public static final int movie=0x7f020012;
+        public static final int movie_md=0x7f020013;
+        public static final int multiselect=0x7f020014;
+        public static final int music=0x7f020015;
+        public static final int music_md=0x7f020016;
+        public static final int newfolder=0x7f020017;
+        public static final int pdf=0x7f020018;
+        public static final int pdf_md=0x7f020019;
+        public static final int photo=0x7f02001a;
+        public static final int photo_md=0x7f02001b;
+        public static final int powerpoint=0x7f02001c;
+        public static final int powerpoint_md=0x7f02001d;
+        public static final int sdcard=0x7f02001e;
+        public static final int search=0x7f02001f;
+        public static final int settings_actbar=0x7f020020;
+        public static final int unknown=0x7f020021;
+        public static final int unknown_md=0x7f020022;
+        public static final int xml_html=0x7f020023;
+        public static final int xml_html_md=0x7f020024;
+        public static final int zip=0x7f020025;
+        public static final int zip_md=0x7f020026;
     }
     public static final class id {
         public static final int bt_button=0x7f080002;
@@ -76,6 +86,9 @@ public final class R {
         public static final int list_icon=0x7f080004;
         public static final int list_listview=0x7f080011;
         public static final int list_name=0x7f080005;
+        public static final int multi_icon=0x7f080014;
+        public static final int multi_text=0x7f080015;
+        public static final int multiselect_path=0x7f080013;
         public static final int scroll_path=0x7f080010;
     }
     public static final class layout {
@@ -86,6 +99,7 @@ public final class R {
         public static final int list_content_layout=0x7f030004;
         public static final int main_fragments=0x7f030005;
         public static final int main_layout=0x7f030006;
+        public static final int multiselect_layout=0x7f030007;
     }
     public static final class string {
         public static final int app_name=0x7f070000;
