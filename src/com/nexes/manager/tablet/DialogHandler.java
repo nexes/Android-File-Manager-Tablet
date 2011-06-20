@@ -14,6 +14,7 @@ import android.widget.TextView;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.io.File;
 
 public class DialogHandler extends DialogFragment {
@@ -26,6 +27,7 @@ public class DialogHandler extends DialogFragment {
 	private static Context mContext;
 	
 	private ArrayList<String> mFiles;
+	private String mPath;
 	
 	
 	public static DialogHandler newDialog(int type, Context context) {
@@ -40,23 +42,27 @@ public class DialogHandler extends DialogFragment {
 		mFiles = list;
 	}
 	
+	public void setFilePath(String path) {
+		mPath = path;
+	}
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
+			
 		switch(mDialogType) {
 		case HOLDINGFILE_DIALOG:
-			setStyle(DialogFragment.STYLE_NO_TITLE, 
-					 android.R.style.Theme_Holo_Dialog);
+			setStyle(DialogFragment.STYLE_NORMAL,
+					 android.R.style.Theme_Holo_Panel);
 			break;
 		case SEARCHRESULT_DIALOG:
 			setStyle(DialogFragment.STYLE_NORMAL, 
-					 android.R.style.Theme_Holo_Dialog);
+					 android.R.style.Theme_Translucent);
 			break;
 			
 		case FILEINFO_DIALOG:
-			setStyle(DialogFragment.STYLE_NORMAL, 
-					 android.R.style.Theme_Holo_Dialog);
+			setStyle(DialogFragment.STYLE_NO_FRAME, 
+					 android.R.style.Theme_Holo_Panel);
 			break;
 		}
 	}
@@ -71,10 +77,9 @@ public class DialogHandler extends DialogFragment {
 			return createSearchResultDialog();
 			
 		case FILEINFO_DIALOG:
-			return createFileInfoDialog();
-			
+			return createFileInfoDialog(inflater);
 		}
-				
+
 		return super.onCreateView(inflater, container, savedInstanceState);
 	}
 	
@@ -84,7 +89,8 @@ public class DialogHandler extends DialogFragment {
 
 		ListView list = new ListView(mContext);
 		list.setAdapter(new DialogListAdapter(mContext, R.layout.dir_list_layout, mFiles));
-		
+		list.setBackgroundColor(0xbb000000);
+
 		return list;
 	}
 	
@@ -92,10 +98,70 @@ public class DialogHandler extends DialogFragment {
 		return null;
 	}
 	
-	private View createFileInfoDialog() {
-		View v = null;
+	private View createFileInfoDialog(LayoutInflater inflater) {
+		File[] files = null;
+		File file = new File(mPath);
+		int fileCount = 0;
+		int dirCount = 0;
+		View v = inflater.inflate(R.layout.info_layout, null);
+		v.setBackgroundColor(0xcc000000);
+		
+		TextView numDir = (TextView)v.findViewById(R.id.info_dirs_label);
+		TextView numFile = (TextView)v.findViewById(R.id.info_files_label);
+		
+		if (file.isDirectory()) {
+			files = file.listFiles();
+			
+			if (files != null)
+				for(File f : files)
+					if (f.isDirectory())
+						dirCount++;
+					else
+						fileCount++;
+			if (fileCount == 0)
+				numFile.setText("-");
+			else
+				numFile.setText("" + fileCount);
+			
+			if(dirCount == 0)
+				numDir.setText("-");
+			else
+				numDir.setText("" + dirCount);
+			
+		} else {
+			numFile.setText("-");
+			numDir.setText("-");
+		}
+		String apath = file.getPath();
+		Date date = new Date(file.lastModified());
+		
+		((TextView)v.findViewById(R.id.info_name_label)).setText(file.getName());
+		((TextView)v.findViewById(R.id.info_time_stamp)).setText(date.toString());
+		((TextView)v.findViewById(R.id.info_path_label)).setText(apath.substring(0, apath.lastIndexOf("/") + 1));
+		((TextView)v.findViewById(R.id.info_total_size)).setText(formatSize(file.length()));		
+		((TextView)v.findViewById(R.id.info_read_perm)).setText(file.canRead() + "");
+		((TextView)v.findViewById(R.id.info_write_perm)).setText(file.canWrite() + "");
+		((TextView)v.findViewById(R.id.info_execute_perm)).setText(file.canExecute() + "");
 		
 		return v;
+	}
+	
+	private String formatSize(long size) {
+		int kb = 1024;
+		int mb = kb * 1024;
+		int gb = mb * 1024;
+		String ssize = "";
+		
+		if (size < kb)
+			ssize = String.format("%.2f bytes", (double)size);
+		else if (size > kb && size < mb)
+			ssize = String.format("%.2f Kb", (double)size / kb);
+		else if (size > mb && size < gb)
+			ssize = String.format("%.2f Mb", (double)size / mb);
+		else if(size > gb)
+			ssize = String.format("%.2f Gb", (double)size / gb);
+		
+		return ssize;
 	}
 	
 	/*
