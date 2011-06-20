@@ -474,9 +474,10 @@ public class FileManager {
 		public int compare(String arg0, String arg1) {
 			String dir = mPathStack.peek();
 			Long first = new File(dir + "/" + arg0).length();
-			Long second = new File(dir + "/" + arg0).length();
+			Long second = new File(dir + "/" + arg1).length();
 			
-			return (int) (first - second);
+			Log.e("FILE MANAGER", "first: " + first + "\nsecond: " + second);
+			return first.compareTo(second);//(int) (first - second);
 		}
 	};
 	
@@ -485,16 +486,21 @@ public class FileManager {
 		public int compare(String arg0, String arg1) {
 			String ext = null;
 			String ext2 = null;
+			int ret;
 			
 			try {
-				ext = arg0.substring(arg0.lastIndexOf(".") + 1, arg0.length());
-				ext2 = arg1.substring(arg1.lastIndexOf(".") + 1, arg1.length());
+				ext = arg0.substring(arg0.lastIndexOf(".") + 1, arg0.length()).toLowerCase();
+				ext2 = arg1.substring(arg1.lastIndexOf(".") + 1, arg1.length()).toLowerCase();
 				
 			} catch (IndexOutOfBoundsException e) {
 				return 0;
 			}
+			ret = ext.compareTo(ext2);
 			
-			return ext.compareTo(ext2);
+			if (ret == 0)
+					return arg0.toLowerCase().compareTo(arg1.toLowerCase());
+			
+			return ret;
 		}
 	};
 	
@@ -548,14 +554,16 @@ public class FileManager {
 					break;
 					
 				case SORT_SIZE:
+					int index = 0;
 					Object[] size_ar = mDirContent.toArray();
 					String dir = mPathStack.peek();
 					
 					Arrays.sort(size_ar, size);
+					
 					mDirContent.clear();
-					for (Object a : size_ar){
+					for (Object a : size_ar) {
 						if(new File(dir + "/" + (String)a).isDirectory())
-							mDirContent.add(0, (String)a);
+							mDirContent.add(index++, (String)a);
 						else
 							mDirContent.add((String)a);
 					}
@@ -563,20 +571,17 @@ public class FileManager {
 					
 				case SORT_TYPE:
 					int dirindex = 0;
-					int fileindex = dirindex;
 					Object[] type_ar = mDirContent.toArray();
 					String current = mPathStack.peek();
 					
 					Arrays.sort(type_ar, type);
 					mDirContent.clear();
 					
-					for (Object a : type_ar){
+					for (Object a : type_ar) {
 						if(new File(current + "/" + (String)a).isDirectory())
 							mDirContent.add(dirindex++, (String)a);
 						else
-							mDirContent.add(fileindex, (String)a);
-						
-						fileindex = dirindex;
+							mDirContent.add((String)a);
 					}
 					break;
 			}
