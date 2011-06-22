@@ -21,6 +21,8 @@ package com.nexes.manager.tablet;
 import com.nexes.manager.tablet.DirListActivity.OnChangeLocationListener;
 import com.nexes.manager.tablet.EventHandler.OnWorkerThreadFinishedListener;
 import com.nexes.manager.tablet.MainActivity.OnSetingsChangeListener;
+import com.nexes.manager.tablet.DialogHandler.OnSearchFileSelected; 
+
 import java.io.File;
 import java.util.ArrayList;
 
@@ -65,12 +67,14 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	private static final int D_MENU_PASTE	= 0x05;
 	private static final int D_MENU_UNZIP	= 0x0b;
 	private static final int D_MENU_BOOK	= 0x0c;
+	private static final int D_MENU_INFO	= 0x0d;
 	
 	private static final int F_MENU_DELETE	= 0X06;
 	private static final int F_MENU_RENAME	= 0X07;
 	private static final int F_MENU_COPY	= 0X08;
 	private static final int F_MENU_MOVE	= 0X09;
 	private static final int F_MENU_SEND	= 0x0a;
+	private static final int F_MENU_INFO	= 0x0e;
 	private static boolean mMultiSelectOn = false;
 	
 	private FileManager mFileMang;
@@ -93,7 +97,6 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	private boolean mHoldingFile;
 	private boolean mHoldingZip;
 	private boolean mCutFile;
-	private boolean mFromSearchResult;
 	private boolean mShowThumbnails;
 	private int mBackPathIndex;
 	
@@ -113,6 +116,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		@Override
 		public boolean onCreateActionMode(ActionMode mode, Menu menu) {
 			menu.add(0, D_MENU_BOOK, 0, "Bookmark");
+			menu.add(0, D_MENU_INFO, 0, "Info");
 			menu.add(0, D_MENU_DELETE, 0, "Delete");
 			menu.add(0, D_MENU_RENAME, 0, "Rename");
         	menu.add(0, D_MENU_COPY, 0, "Copy");
@@ -132,10 +136,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			String name = "/" + mode.getTitle().toString();
 			String path = null;
 			
-			if(mFromSearchResult)
-				path = mode.getTitle().toString();
-			else
-				path = mFileMang.getCurrentDir() + name;
+			path = mFileMang.getCurrentDir() + name;
 			
 			switch(item.getItemId()) {
 				case D_MENU_BOOK:
@@ -207,6 +208,13 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 					((MainActivity)getActivity()).changeActionBarTitle("Open Manager");
 					mode.finish();
 					return true;
+				
+				case D_MENU_INFO:
+					DialogHandler dialog = DialogHandler.newDialog(DialogHandler.FILEINFO_DIALOG, mContext);
+					dialog.setFilePath(path);
+					dialog.show(getFragmentManager(), "info");
+					mode.finish();
+					return true;
 			}			
 			return false;
 		}
@@ -225,7 +233,8 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		}
 		
 		@Override
-		public boolean onCreateActionMode(ActionMode mode, Menu menu) {			
+		public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+			menu.add(0, F_MENU_INFO, 0, "Info");
 			menu.add(0, F_MENU_DELETE, 0, "Delete");
     		menu.add(0, F_MENU_RENAME, 0, "Rename");
     		menu.add(0, F_MENU_COPY, 0, "Copy");
@@ -241,11 +250,8 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			ArrayList<String> files = new ArrayList<String>();
 			String path = null;
 			String name = mode.getTitle().toString();
-			
-			if(mFromSearchResult)
-				path = name;
-			else
-				path = mFileMang.getCurrentDir() + "/" + name;
+	
+			path = mFileMang.getCurrentDir() + "/" + name;
 			
 			switch(item.getItemId()) {
 				case F_MENU_DELETE:
@@ -286,6 +292,13 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 				case F_MENU_SEND:
 					files.add(path);
 					mHandler.sendFile(files);
+					mode.finish();
+					return true;
+					
+				case F_MENU_INFO:
+					DialogHandler dialog = DialogHandler.newDialog(DialogHandler.FILEINFO_DIALOG, mContext);
+					dialog.setFilePath(path);
+					dialog.show(getFragmentManager(), "info");
 					mode.finish();
 					return true;
 			}
@@ -403,17 +416,9 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		final String name;
 		final File file;
 		
-		/* if we are getting data from a search result, we need to setup some
-		   vars a little differently. */
-		if(mFromSearchResult) {
-			String s = mData.get(pos);
-			name = s.substring(s.lastIndexOf("/") + 1, s.length());
-			file = new File(s);
-		} else {
-			name = mData.get(pos);
-			file = new File(mFileMang.getCurrentDir() + "/" + name);
-		}
-
+		name = mData.get(pos);
+		file = new File(mFileMang.getCurrentDir() + "/" + name);
+		
 		if(mMultiSelectOn) {
 			View v = mMultiSelect.addFile(file.getPath());
 			if(v == null)
@@ -581,7 +586,6 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		if(mActionModeSelected || mMultiSelectOn)
 			return;
 		
-		mFromSearchResult = false;
 		mData = mFileMang.setHomeDir(name);
 		mDelegate.notifyDataSetChanged();
 		
@@ -602,13 +606,29 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 				Toast.makeText(mContext, "Sorry, zero items found", Toast.LENGTH_LONG).show();
 				return;
 			}
-
-			mData.clear();
-			for(String s : results)
-				mData.add(s);
 			
-			mFromSearchResult = true;
-			mDelegate.notifyDataSetChanged();
+			DialogHandler dialog = DialogHandler.newDialog(DialogHandler.SEARCHRESULT_DIALOG, mContext);
+			dialog.setHoldingFileList(results);
+			dialog.setOnSearchFileSelected(new OnSearchFileSelected() {
+				
+				@Override
+				public void onFileSelected(String fileName) {
+					File f = new File(fileName);
+					String name;
+					
+					if (f.isDirectory()) {
+						mData = mFileMang.getNextDir(f.getPath(), true);
+						mDelegate.notifyDataSetChanged();
+						
+					} else {
+						name = f.getPath().substring(0, f.getPath().lastIndexOf("/"));
+						mData = mFileMang.getNextDir(name, true);
+						mDelegate.notifyDataSetChanged();
+					}						
+				}
+			});
+			
+			dialog.show(getFragmentManager(), "dialog");
 			
 		} else if(type == EventHandler.UNZIPTO_TYPE && results != null) {
 			String name = results.get(0);
@@ -777,10 +797,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		final String bname = name;
 		Button button = new Button(mContext);
 		
-		if(mFromSearchResult)
-			mData = mFileMang.getNextDir(mData.get(pos), true);
-		else
-			mData = mFileMang.getNextDir(name, false);
+		mData = mFileMang.getNextDir(name, false);
 		
 		button.setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -834,21 +851,11 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		public View getView(int position, View view, ViewGroup parent) {
 			String ext;
 			File file = null;
-			String current = mFileMang.getCurrentDir();
-			final int pos = position;
-			
-			/* if we are getting data from a search result, we need to set
-			   up some vars differently than normal. */
-			if(mFromSearchResult) {
-				String n = mData.get(position);
-				mName = n.substring(n.lastIndexOf("/") + 1, n.length());
-				file = new File(n);
-			
-			} else {
-				mName = mData.get(position);
-				file = new File(current + "/" + mName);
-			}
-				
+			String current = mFileMang.getCurrentDir();		
+
+			mName = mData.get(position);
+			file = new File(current + "/" + mName);
+									
 			try {
 				ext = mName.substring(mName.lastIndexOf('.') + 1, mName.length());
 				
@@ -886,7 +893,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 				if(file.canRead() && file.list().length > 0)
 					mHolder.mIcon.setImageResource(R.drawable.folder_large_full);
 				else
-					mHolder.mIcon.setImageResource(R.drawable.folder_large);			
+					mHolder.mIcon.setImageResource(R.drawable.folder_large);
 				
 			} else if(ext.equalsIgnoreCase("doc") || ext.equalsIgnoreCase("docx")) {
 				mHolder.mIcon.setImageResource(R.drawable.doc);
@@ -927,11 +934,11 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 
 				if(file.length() > 0 && mShowThumbnails) {
 					Bitmap thumb = mThumbnail.isBitmapCached(file.getPath());
-					
+
 					if (thumb == null) {
-						Handler handle = new Handler(new Handler.Callback() {
+						final Handler handle = new Handler(new Handler.Callback() {
 							public boolean handleMessage(Message msg) {
-								mHolder.mIcon.setImageBitmap((Bitmap)msg.obj);								
+								mHolder.mIcon.setImageBitmap((Bitmap)msg.obj);
 								notifyDataSetChanged();
 								
 								return true;
