@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- 
+	Open Manager, an open source file manager for the Android system
+    Copyright (C) 2011  Joe Berria <nexesdevelopment@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ -->
+ 
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:padding="6dip">
+	<LinearLayout
+		android:orientation="horizontal"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:paddingBottom="10dip">
+		<ImageView
+			android:id="@+id/info_icon"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:adjustViewBounds="true"
+			android:maxHeight="72dip"
+			android:layout_gravity="left"/>
+			<LinearLayout
+				android:orientation="vertical"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content">
+					<TextView
+						android:id="@+id/info_name_label"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:gravity="right"
+						android:paddingRight="24dip"
+						android:maxLines="1"
+						android:textColor="@color/white"
+						android:textAppearance= "?android:attr/textAppearanceLarge"/>
+					<TextView
+						android:id="@+id/info_path_label"
+						android:layout_width="fill_parent"
+						android:layout_height="wrap_content"
+						android:maxLines="1"
+						android:textColor="@color/white"
+						android:textAppearance="?android:attr/textAppearanceLarge"
+						android:paddingRight="4dip"
+						android:gravity="right"/>
+			</LinearLayout>
+	</LinearLayout>
+	
+	<ScrollView
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:padding="8dip"
+		android:layout_weight="2">
+			<TableLayout
+				android:orientation="vertical"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"
+				android:stretchColumns="*"
+				android:shrinkColumns="*">
+				<TableRow>
+					<TextView
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:textColor="@color/white"
+						android:gravity="left"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:text="Number of folders: "/>
+					<TextView
+						android:id="@+id/info_dirs_label"
+						android:layout_width="fill_parent"
+						android:layout_height="wrap_content"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:textColor="@color/white"
+						android:gravity="right"/>
+				</TableRow>
+				<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:maxHeight="8dip"/>
+				<TableRow>
+					<TextView
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:textColor="@color/white"
+						android:gravity="left"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:text="Number of files: "/>
+					<TextView
+						android:id="@+id/info_files_label"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:textColor="@color/white"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:gravity="right"/>
+				</TableRow>
+				<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:maxHeight="8dip"/>
+				<TableRow>
+					<TextView
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:textColor="@color/white"
+						android:gravity="left"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:text="Last Modified: "/>
+					<TextView
+						android:id="@+id/info_time_stamp"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:textColor="@color/white"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:gravity="right"/>
+				</TableRow>
+				<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:maxHeight="25dip"/>
+				<TableRow>
+					<TextView
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:textColor="@color/white"
+						android:gravity="left"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:text="Total size: "/>
+					<TextView
+						android:id="@+id/info_total_size"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:textColor="@color/white"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:gravity="right"/>
+				</TableRow>
+				<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="45dip"/>
+				<TableRow>
+					<TextView
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:textColor="@color/white"
+						android:gravity="left"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:text="File Permissions: "/>
+				</TableRow>
+				<TableRow>
+					<TextView
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:paddingLeft="10dip"
+						android:textColor="@color/white"
+						android:gravity="left"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:text="Read: "/>
+					<TextView
+						android:id="@+id/info_read_perm"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:textColor="@color/white"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:gravity="right"/>
+				</TableRow>
+				<TableRow>
+					<TextView
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:paddingLeft="10dip"
+						android:textColor="@color/white"
+						android:gravity="left"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:text="Write: "/>
+					<TextView
+						android:id="@+id/info_write_perm"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:textColor="@color/white"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:gravity="right"/>
+				</TableRow>
+				<TableRow>
+					<TextView
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:paddingLeft="10dip"
+						android:textColor="@color/white"
+						android:gravity="left"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:text="Excecute: "/>
+					<TextView
+						android:id="@+id/info_execute_perm"
+						android:layout_width="match_parent"
+						android:layout_height="wrap_content"
+						android:textColor="@color/white"
+						android:textAppearance="?android:attr/textAppearanceMedium"
+						android:gravity="right"/>
+				</TableRow>
+			</TableLayout>
+	</ScrollView>
+</LinearLayout>

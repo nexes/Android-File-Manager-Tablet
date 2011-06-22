@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent">
+	<ListView
+		android:id="@+id/search_listview"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:layout_weight="1"
+		android:gravity="center"/>
+	<LinearLayout
+		android:id="@+id/search_button_view"
+		android:orientation="vertical"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:visibility="gone">
+		
+		<include 
+			layout="@layout/info_layout"
+			android:id="@+id/search_file_info" 
+			android:layout_width="match_parent" 
+			android:layout_height="match_parent" />
+
+		<Button
+			android:id="@+id/search_button_open"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:visibility="invisible"
+			android:text="Launch this file"/>
+		<Button
+			android:id="@+id/search_button_go"
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:text="Go to this file"/>
+	</LinearLayout>
+</LinearLayout>
