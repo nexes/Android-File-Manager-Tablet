@@ -100,6 +100,10 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	private boolean mShowThumbnails;
 	private int mBackPathIndex;
 	
+	public interface OnBookMarkAddListener {
+		public void onBookMarkAdd(String path);
+	}
+	
 	private ActionMode.Callback mFolderOptActionMode = new ActionMode.Callback() {
 		
 		@Override
@@ -307,10 +311,6 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		}
 	};
 	
-	public interface OnBookMarkAddListener {
-		public void onBookMarkAdd(String path);
-	}
-	
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -318,9 +318,13 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		
 		mContext = getActivity();
 		mFileMang = new FileManager();
-		mData = mFileMang.setHomeDir("/sdcard");
 		mHandler = new EventHandler(mContext, mFileMang);
 		mHandler.setOnWorkerThreadFinishedListener(this);
+		
+		if (savedInstanceState != null)
+			mData = mFileMang.getNextDir(savedInstanceState.getString("location"), true);
+		else
+			mData = mFileMang.setHomeDir("/sdcard");
 		
 		mBackPathIndex = 0;
 		mHoldingFile = false;
@@ -337,6 +341,13 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		DirListActivity.setOnChangeLocationListener(this);
 	}
 	
+	 @Override
+	    public void onSaveInstanceState(Bundle outState) {
+	    	super.onSaveInstanceState(outState);
+	    	
+	    	outState.putString("location", mFileMang.getCurrentDir());
+	    }
+	
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		View v = inflater.inflate(R.layout.main_layout, container, false);
@@ -347,6 +358,13 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		mList = (ListView)v.findViewById(R.id.list_listview);
 		mMultiSelectView = (LinearLayout)v.findViewById(R.id.multiselect_path);
 		
+		if (savedInstanceState != null) {
+			String location = savedInstanceState.getString("location");
+			String[] parts = location.split("/");
+			
+			for(int i = 2; i < parts.length; i++)
+				addBackButton(parts[i], false);
+		}
 		
 		if(mShowGrid) {
 			mDelegate = new DataAdapter(mContext, R.layout.grid_content_layout, mData);
@@ -409,7 +427,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 
 		return v;
 	}
-		
+	
 	@Override
 	public void onItemClick(AdapterView<?> list, View view, int pos, long id) {
 		String item_ext = "";
@@ -437,7 +455,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		}
 		
 		if(file.isDirectory() && !mActionModeSelected ) {
-			addBackButton(name, pos);
+			addBackButton(name, true);
 
 		} else if (!file.isDirectory() && !mActionModeSelected ) {
 			
@@ -741,8 +759,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		}
 	}
 			
-	public void changeMultiSelectState(boolean state, 
-											  MultiSelectHandler handler) {
+	public void changeMultiSelectState(boolean state, MultiSelectHandler handler) {
 		if(state && handler != null) {
 			mMultiSelect = handler;
 			mMultiSelectOn = state;
@@ -793,11 +810,12 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		mHoldingFileList = temp;
 	}
 	
-	private void addBackButton(String name, int pos) {
+	private void addBackButton(String name, boolean refreshList) {//, int pos) {
 		final String bname = name;
 		Button button = new Button(mContext);
 		
-		mData = mFileMang.getNextDir(name, false);
+		if (refreshList)
+			mData = mFileMang.getNextDir(name, false);
 		
 		button.setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -809,8 +827,8 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 				if(mActionModeSelected || mMultiSelectOn)
 					return;
 				
-				if(index != (mPathView.getChildCount() - 1)) {					
-					while(index < mPathView.getChildCount() - 1) 
+				if(index != (mPathView.getChildCount() - 1)) {
+					while(index < mPathView.getChildCount() - 1)
 						mPathView.removeViewAt(mPathView.getChildCount() - 1);
 					
 					mBackPathIndex = index + 1;
@@ -825,8 +843,9 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		button.setText(name);
 		button.setTag(mBackPathIndex++);
 		mPathView.addView(button);
-					
-		mDelegate.notifyDataSetChanged();	
+		
+		if (refreshList)
+			mDelegate.notifyDataSetChanged();
 	}
 	
 	
