@@ -32,16 +32,22 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.LayoutInflater;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.EditText;
 import android.widget.ArrayAdapter;
 import android.widget.AdapterView.AdapterContextMenuInfo;
+import android.widget.Toast;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.io.File;
 
-public class DirListActivity extends ListFragment implements OnBookMarkAddListener {
+public class DirListActivity extends ListFragment implements OnBookMarkAddListener,
+															 OnItemLongClickListener{
 	private static final String PREF_LIST_KEY =	"pref_dirlist";
 	private static final int BOOKMARK_POS = 6;
 	
@@ -61,7 +67,6 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
 		String storage = "/" + Environment.getExternalStorageDirectory().getName();
 		mContext = getActivity();
 		mDirList = new ArrayList<String>();
@@ -94,6 +99,7 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 		lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 		lv.setCacheColorHint(0x00000000);
 		lv.setDrawSelectorOnTop(true);
+		lv.setOnItemLongClickListener(this);
 		lv.setBackgroundResource(R.drawable.listgradback);
 		
 		mDelegate = new DirListAdapter(mContext, R.layout.dir_list_layout, mDirList);
@@ -101,6 +107,7 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 		setListAdapter(mDelegate);
 		
 		DirContentActivity.setOnBookMarkAddListener(this);
+		
 	}
 	
 	@Override
@@ -113,12 +120,76 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 		if(mLastIndicater != null)
 			mLastIndicater.setVisibility(View.GONE);
 			
-		v = (ImageView)view.findViewById(R.id.list_arrow);//maybe replace this?
+		v = (ImageView)view.findViewById(R.id.list_arrow);
 		v.setVisibility(View.VISIBLE);
 		mLastIndicater = v;
 		
 		if(mChangeLocList != null)
 			mChangeLocList.onChangeLocation(mDirList.get(pos));
+	}
+	
+	@Override
+	public boolean onItemLongClick(AdapterView<?> list, View view, int pos, long id) {
+		
+		/* the first two items in our dir list is / and scdard.
+		 * the user should not be able to change the location
+		 * of these two entries. Everything else is fair game */
+		if (pos > 1 && pos < BOOKMARK_POS) {
+			AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+			LayoutInflater inflater = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			
+			View v = inflater.inflate(R.layout.input_dialog_layout, null);
+			final int position = pos;
+			final EditText text = (EditText)v.findViewById(R.id.dialog_input);
+			
+			((TextView)v.findViewById(R.id.dialog_message))
+							.setText("Change the location of this directory.");
+			
+			text.setText(mDirList.get(pos));
+			builder.setTitle("Bookmark Location");
+			builder.setView(v);
+			
+			switch(pos) {
+			case 2:	builder.setIcon(R.drawable.download_md);break;
+			case 3: builder.setIcon(R.drawable.music_md); 	break;
+			case 4:	builder.setIcon(R.drawable.movie_md);	break;
+			case 5:	builder.setIcon(R.drawable.photo_md); 	break;
+			}
+			
+			builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+				
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					dialog.dismiss();
+				}
+			});
+			
+			builder.setPositiveButton("Change", new DialogInterface.OnClickListener() {
+				
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					String location = text.getText().toString();
+					File file = new File(location);
+					
+					if (!file.isDirectory()) {
+						Toast.makeText(mContext, 
+									   location + " is an invalid directory", 
+									   Toast.LENGTH_LONG).show();
+						dialog.dismiss();
+					
+					} else {
+						mDirList.remove(position);
+						mDirList.add(position, location);
+						buildDirString();
+					}
+				}
+			});
+			
+			builder.create().show();
+			return true;
+		}
+		
+		return false;
 	}
 	
 	@Override
@@ -147,7 +218,7 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 				
 			}).create().show();		
 	}
-	
+		
 	@Override
 	public void onBookMarkAdd(String path) {
 		mDirList.add(path);
@@ -218,38 +289,41 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 					mLastIndicater = mHolder.mIndicate;
 				}
 			}
-			
-			if(position == 0)
-				mHolder.mMainText.setText(name);
-			else
-				mHolder.mMainText.setText(name.substring(name.lastIndexOf("/") + 1, 
-										  name.length()));
 
 			switch(position) {
 			case 0:
+				mHolder.mMainText.setText("/");
 				mHolder.mIcon.setImageResource(R.drawable.drive);
 				break;
 			case 1:
+				mHolder.mMainText.setText("sdcard");
 				mHolder.mIcon.setImageResource(R.drawable.sdcard);
 				break;
 			case 2:
+				mHolder.mMainText.setText("Downloads");
 				mHolder.mIcon.setImageResource(R.drawable.download_md);
 				break;
 			case 3:
+				mHolder.mMainText.setText("Music");
 				mHolder.mIcon.setImageResource(R.drawable.music_md);
 				break;
 			case 4:
+				mHolder.mMainText.setText("Movies");
 				mHolder.mIcon.setImageResource(R.drawable.movie_md);
 				break;
 			case 5:
+				mHolder.mMainText.setText("Photos");
 				mHolder.mIcon.setImageResource(R.drawable.photo_md);
 				break;
 			case 6:
+				mHolder.mMainText.setText("Bookmarks");
 				mHolder.mIcon.setImageResource(R.drawable.favorites);
 				view.setBackgroundColor(R.color.black);
 				break;
 				
 			default:
+				mHolder.mMainText.setText(name.substring(name.lastIndexOf("/") + 1, 
+						  				  name.length()));
 				mHolder.mIcon.setImageResource(R.drawable.folder_md);
 				break;
 			}

@@ -19,6 +19,8 @@
 package com.nexes.manager.tablet;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.content.Intent;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -26,6 +28,7 @@ import android.content.BroadcastReceiver;
 import android.content.IntentFilter;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothClass;
@@ -48,8 +51,6 @@ import android.util.Log;
 import java.util.Set;
 import java.util.ArrayList;
 import java.util.UUID;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.OutputStream;
@@ -63,11 +64,14 @@ import java.net.UnknownHostException;
 
 public class BluetoothActivity extends Activity implements OnClickListener,
 														   OnItemClickListener{
-	private static final int REQUEST_ENABLE = 	0;
+	private static final int REQUEST_ENABLE = 	0x0;
 	
 	private static final int BUTTON_ENABLE =	0x01;
 	private static final int BUTTON_FIND =		0x02;
 	private static final int BUTTON_CLEAR =		0x03;
+	private static final int DIALOG_UPDATE =	0x04;
+	private static final int DIALOG_CANCEL = 	0x05;
+	private static final int DIALOG_FINISH =	0x06;
 	
 	private ArrayList<String> mDeviceData;
 	private BluetoothAdapter mBluetoothAdapter;
@@ -75,8 +79,43 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 	private boolean mUnRegister = false;
 	private TextView mMessageView;
 	private Button mButton;
+	private ProgressDialog mProgress;
 	
 	private String[] mFilePaths;
+	
+	private Handler handle = new Handler() {
+		
+		@Override
+		public void handleMessage(Message msg) {
+			int progress = msg.arg1;
+			int size = msg.arg2;
+									
+			switch(msg.what) {
+			case DIALOG_UPDATE:
+				String name = (String)msg.obj;
+				mProgress.setMessage("Sending " + name);
+				mProgress.setMax(size);
+				mProgress.setProgress((mProgress.getProgress() + progress) / size);
+				break;
+				
+			case DIALOG_CANCEL:
+				String error = (String)msg.obj;
+				
+				mProgress.cancel();
+				Toast.makeText(BluetoothActivity.this, 
+						   	   "Error, " + error, 
+						       Toast.LENGTH_LONG).show();
+				break;
+				
+			case DIALOG_FINISH:
+				mProgress.cancel();
+				Toast.makeText(BluetoothActivity.this, 
+							   "Files successfully sent", 
+							   Toast.LENGTH_LONG).show();
+				break;
+			}
+		}
+	};
 
 	/*
 	 * String name, is the variable that will contain the name and MAC address
@@ -192,6 +231,7 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 		case BUTTON_CLEAR:
 			mButton.setText("Scan for Devices");
 			mButton.setId(BUTTON_FIND);
+			mMessageView.setText("Bluetooth is turned on");
 			
 			mDeviceData.clear();
 			mDeviceData.add("No Devices");
@@ -208,6 +248,10 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 		if(name.equals("No Devices"))
 			return;
 		
+		mProgress = new ProgressDialog(BluetoothActivity.this);
+		mProgress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		mProgress.setMessage("Sending...");
+		
 		deviceName = name.substring(0, name.lastIndexOf('\n'));
 		
 		//don't discover devices when trying to pair or connect.
@@ -216,13 +260,14 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 		
 		new AlertDialog.Builder(this)
 			.setTitle("Bluetooth Transfer")
-			.setMessage("Would you like to send this file to " + deviceName +"?")
+			.setMessage("Would you like to send this " +mFilePaths.length + " file(s) to " + deviceName +"?")
 			.setIcon(R.drawable.bluetooth)
 			.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 				
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					new ClientSocketThread(name).start();
+					mProgress.show();
+					new ClientSocketThread(name, handle).start();
 				}
 			})
 			.setNegativeButton("No", new DialogInterface.OnClickListener() {
@@ -254,7 +299,7 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 	protected void onDestroy() {
 		super.onDestroy();
 		
-		if(mUnRegister)
+		if (mUnRegister)
 			unregisterReceiver(mReceiver);
 	}
 	
@@ -284,32 +329,34 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 	 *
 	 */
 	private class ClientSocketThread extends Thread {
-		private static final String DEV_UUID = "00001101-0000-1000-8000-00805F9B34FB";
+		private static final String DEV_UUID = "00001105-0000-1000-8000-00805F9B34FB";
 		private BluetoothDevice mRemoteDevice = null;
 		private BluetoothSocket mSocket = null;
 		private String mMACAddres;
+		private Handler mHandle;
 		
 		
-		public ClientSocketThread(String device) {
+		public ClientSocketThread(String device, Handler handle) {
 			mMACAddres = device.substring(device.lastIndexOf('\n') + 1,
 										 device.lastIndexOf(":")).toUpperCase();
 			
-			Log.e("CLIENTSOCKETTHREAD", "mac address is " + mMACAddres);
+			mHandle = handle;
 			
 			try {
 				mRemoteDevice = mBluetoothAdapter.getRemoteDevice(mMACAddres);
 				mSocket = mRemoteDevice.createRfcommSocketToServiceRecord(UUID.fromString(DEV_UUID));
 				
 			} catch (IllegalArgumentException e) {
-				Log.e("ClientSocketThread", "Remote address " + mMACAddres + ", " + e.getMessage());
 				mSocket = null;
+				Message msg = new Message();
+				msg.obj = e.getMessage();
+				mHandle.sendEmptyMessage(DIALOG_CANCEL);
 			
 			} catch (IOException e) {
-				Log.e("ClientSocketThread", "ioexception " + e.getMessage());
+				Message msg = new Message();
+				msg.obj = e.getMessage();
+				mHandle.sendEmptyMessage(DIALOG_CANCEL);
 			}
-			
-			if(mSocket == null)
-				Log.e("CLIENTSOCKETTHREAD", "mSocket is null");
 		}
 		
 		@Override
@@ -327,8 +374,10 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 				communicateData(mSocket);
 				
 			} catch (IOException e) {
-				Log.e("ClientSocketThread", "catch mSocket.connect() = " + e.getMessage());
-				e.printStackTrace();
+				Message msg = new Message();
+				msg.obj = e.getMessage();
+				msg.what = DIALOG_CANCEL;
+				mHandle.sendMessage(msg);
 				
 				try {
 					mSocket.close();
@@ -338,41 +387,56 @@ public class BluetoothActivity extends Activity implements OnClickListener,
 			}
 		}
 		
-		public void cancel() {
+		private void communicateData(BluetoothSocket socket) {
+			OutputStream writeStrm = null;
+			FileInputStream readStrm = null;
+			int len = mFilePaths.length;
+			byte[] buffer = new byte[1024];
+			
+			Log.e("ClientSocketThread", "communicateData is called");
+						
+			try {
+				for (int i = 0; i < len; i++) {
+					File file = new File(mFilePaths[i]);
+					writeStrm = socket.getOutputStream();
+					readStrm = new FileInputStream(file);
+					int read = 0;
+					
+					Message msg = new Message();
+					msg.obj = (String)file.getName();
+					msg.arg2 = (int)file.length();
+					
+					while((read = readStrm.read(buffer)) != -1) {
+						msg.arg1 = read;
+						msg.what = DIALOG_UPDATE;
+						
+						writeStrm.write(buffer);
+						mHandle.sendMessage(msg);
+					}
+					
+					Log.e("OPENMANAGER", "file is done");
+				}
+
+				writeStrm.close();				
+				cancel();
+								
+			} catch (IOException e) {
+				Message msg = mHandle.obtainMessage();
+				msg.obj = e.getMessage();
+				msg.what = DIALOG_CANCEL;
+				mHandle.sendMessage(msg);
+				
+			}
+		}
+		
+		private void cancel() {
 			try {
 				if(mSocket != null)
 					mSocket.close();
 				
+				mHandle.sendEmptyMessage(DIALOG_FINISH);
+				
 			} catch (IOException e) { }
-		}
-		
-		private void communicateData(BluetoothSocket socket) {
-			OutputStream writeStrm = null;
-			FileInputStream readStrm = null;
-			File file = new File(mFilePaths[0]);
-			byte[] buffer = new byte[1024];
-			
-			Log.e("ClientSocketThread", "communicateData is called");
-
-			
-			try {
-				writeStrm = socket.getOutputStream();
-				readStrm = new FileInputStream(file);
-				
-				while((readStrm.read(buffer)) != -1)
-					writeStrm.write(buffer);
-				
-				
-			} catch (IOException e) {
-				Log.e("ClientSocketThread", "communicateData IOException " + e.getMessage());
-			}
-			
-			try {
-				socket.close();
-			} catch (IOException e) {
-				Log.e("ClientSocketThread", "communicateData socket.close =  " + e.getMessage());
-			}
-			cancel();
 		}
 	}
 	

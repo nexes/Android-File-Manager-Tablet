@@ -34,13 +34,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ActivityNotFoundException;
 import android.preference.PreferenceManager;
-import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView.ScaleType;
 import android.widget.Toast;
 import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
@@ -69,10 +70,10 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	private static final int D_MENU_BOOK	= 0x0c;
 	private static final int D_MENU_INFO	= 0x0d;
 	
-	private static final int F_MENU_DELETE	= 0X06;
-	private static final int F_MENU_RENAME	= 0X07;
-	private static final int F_MENU_COPY	= 0X08;
-	private static final int F_MENU_MOVE	= 0X09;
+	private static final int F_MENU_DELETE	= 0x06;
+	private static final int F_MENU_RENAME	= 0x07;
+	private static final int F_MENU_COPY	= 0x08;
+	private static final int F_MENU_MOVE	= 0x09;
 	private static final int F_MENU_SEND	= 0x0a;
 	private static final int F_MENU_INFO	= 0x0e;
 	private static boolean mMultiSelectOn = false;
@@ -294,10 +295,21 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 					return true;
 					
 				case F_MENU_SEND:
-					files.add(path);
-					mHandler.sendFile(files);
+					Intent mail = new Intent();
+					mail.setType("application/mail");
+					
+					mail.setAction(android.content.Intent.ACTION_SEND);
+					mail.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(path)));
+					startActivity(mail);
+					
 					mode.finish();
 					return true;
+
+//					this is for bluetooth
+//					files.add(path);
+//					mHandler.sendFile(files);
+//					mode.finish();
+//					return true;
 					
 				case F_MENU_INFO:
 					DialogHandler dialog = DialogHandler.newDialog(DialogHandler.FILEINFO_DIALOG, mContext);
@@ -864,6 +876,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		public DataAdapter(Context context, int layout, ArrayList<String> data) {
 			super(context, layout, data);			
 			mThumbnail = new ThumbnailCreator(72, 72);
+			
 		}
 		
 		@Override
@@ -928,6 +941,9 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			} else if(ext.equalsIgnoreCase("zip") || ext.equalsIgnoreCase("gzip")) {
 				mHolder.mIcon.setImageResource(R.drawable.zip);
 				
+			} else if (ext.equalsIgnoreCase("rar")) {
+				mHolder.mIcon.setImageResource(R.drawable.rar);
+				
 			} else if(ext.equalsIgnoreCase("apk")) {
 				mHolder.mIcon.setImageResource(R.drawable.apk);
 				
@@ -952,12 +968,13 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 					  ext.equalsIgnoreCase("jpg")  || ext.equalsIgnoreCase("gif")) {
 
 				if(file.length() > 0 && mShowThumbnails) {
-					Bitmap thumb = mThumbnail.isBitmapCached(file.getPath());
+					BitmapDrawable thumb = mThumbnail.isBitmapCached(file.getPath());
 
 					if (thumb == null) {
 						final Handler handle = new Handler(new Handler.Callback() {
 							public boolean handleMessage(Message msg) {
-								mHolder.mIcon.setImageBitmap((Bitmap)msg.obj);
+								mHolder.mIcon.setImageDrawable((BitmapDrawable)msg.obj);
+								mHolder.mIcon.setScaleType(ScaleType.CENTER);
 								notifyDataSetChanged();
 								
 								return true;
@@ -967,7 +984,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 						mThumbnail.createNewThumbnail(file.getPath(), handle);
 						
 					} else {
-						mHolder.mIcon.setImageBitmap(thumb);
+						mHolder.mIcon.setImageDrawable(thumb);
 					}
 					
 				} else {

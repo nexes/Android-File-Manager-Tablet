@@ -1,3 +1,21 @@
+/*
+	Open Manager For Tablets, an open source file manager for the Android system
+    Copyright (C) 2011  Joe Berria <nexesdevelopment@gmail.com>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package com.nexes.manager.tablet;
 
 import android.app.DialogFragment;
@@ -161,7 +179,6 @@ public class DialogHandler extends DialogFragment {
 				   				i.setAction(android.content.Intent.ACTION_VIEW);
 				   				i.setDataAndType(Uri.fromFile(selected), "audio/*");
 				   				startActivity(i);
-							
 							}
 							
 							/* image files*/
@@ -270,6 +287,8 @@ public class DialogHandler extends DialogFragment {
 							    	}
 					    		}
 					    	}
+							
+							dismiss();
 						}
 					});
 					
@@ -387,6 +406,9 @@ public class DialogHandler extends DialogFragment {
 			
 		} else if(ext.equalsIgnoreCase("zip") || ext.equalsIgnoreCase("gzip")) {
 			res = largeSize ? R.drawable.zip : R.drawable.zip_md;
+			
+		} else if(ext.equalsIgnoreCase("rar")) {
+			res = largeSize ? R.drawable.rar : R.drawable.rar_md;
 			
 		} else if(ext.equalsIgnoreCase("apk")) {
 			res = largeSize ? R.drawable.apk : R.drawable.apk_md;

@@ -19,6 +19,7 @@ public class MultiSelectHandler {
 	private View view;
 	
 	public static MultiSelectHandler getInstance(Context context) {
+		//make this cleaner
 		if(mInstance == null)
 			mInstance = new MultiSelectHandler();
 		if(mFileList == null)
@@ -95,6 +96,9 @@ public class MultiSelectHandler {
 		} else if(extension.equalsIgnoreCase("zip") || 
 				  extension.equalsIgnoreCase("gzip")) {
 			image.setImageResource(R.drawable.zip_md);
+			
+		} else if(extension.equalsIgnoreCase("rar")) {
+			image.setImageResource(R.drawable.rar_md);
 			
 		} else if(extension.equalsIgnoreCase("apk")) {
 			image.setImageResource(R.drawable.apk_md);

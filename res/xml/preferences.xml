@@ -19,11 +19,6 @@
 	</PreferenceCategory>
 	
 	<PreferenceCategory android:title="Sorting">
-		<EditTextPreference
-			android:key="pref_btdownload"
-			android:title="Download Location"
-			android:summary="Choose where to save received bluetooth files"
-			android:dialogTitle="Enter a valid directory path" />
 		<ListPreference
 			android:key="pref_sorting"
 			android:title="Sorting Type"

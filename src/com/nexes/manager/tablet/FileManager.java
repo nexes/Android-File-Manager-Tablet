@@ -445,7 +445,8 @@ public class FileManager {
 	 */
 	public ArrayList<String> searchInDirectory(String dir, String pathName) {
 		ArrayList<String> names = new ArrayList<String>();
-		search_file(dir, pathName, names);
+//		search_file(dir, pathName, names);
+		search_file("/sdcard", pathName, names);
 
 		return names;
 	}
@@ -477,7 +478,7 @@ public class FileManager {
 			Long second = new File(dir + "/" + arg1).length();
 			
 			Log.e("FILE MANAGER", "first: " + first + "\nsecond: " + second);
-			return first.compareTo(second);//(int) (first - second);
+			return first.compareTo(second);
 		}
 	};
 	
@@ -682,7 +683,7 @@ public class FileManager {
 					if(name.toLowerCase().contains(fileName.toLowerCase()))
 						n.add(check.getPath());
 					
-					else if(check.canRead() && !dir.equals("/"))
+					if(!dir.equals("/"))
 						search_file(check.getAbsolutePath(), fileName, n);
 				}
 			}

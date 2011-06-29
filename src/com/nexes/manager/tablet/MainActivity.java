@@ -18,6 +18,7 @@
 
 package com.nexes.manager.tablet;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Intent;
@@ -31,8 +32,8 @@ import android.widget.SearchView;
 import android.widget.Toast;
 import android.util.Log;
 
+import java.io.File;
 import java.util.ArrayList;
-import java.util.Map;
 
 public class MainActivity extends Activity {	
 	//menu IDs
@@ -92,6 +93,12 @@ public class MainActivity extends Activity {
 		public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
 			ArrayList<String>files = handler.getSelectedFiles();
 			
+			//nothing was selected
+			if(files.size() < 1) {
+				mode.finish();
+				return true;
+			}
+			
 			if(mHeldFiles == null)
 				mHeldFiles = new ArrayList<String>();
 			
@@ -131,7 +138,28 @@ public class MainActivity extends Activity {
 				return true;
 				
 			case 15: /* send */
-				mEvHandler.sendFile(mHeldFiles);
+				ArrayList<Uri> uris = new ArrayList<Uri>();
+				Intent mail = new Intent();
+				mail.setType("application/mail");
+				
+				if(mHeldFiles.size() == 1) {
+					mail.setAction(android.content.Intent.ACTION_SEND);
+					mail.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(mHeldFiles.get(0))));
+					startActivity(mail);
+					
+					mode.finish();
+					return true;
+				}
+				
+				for(int i = 0; i < mHeldFiles.size(); i++)
+					uris.add(Uri.fromFile(new File(mHeldFiles.get(i))));
+				
+				mail.setAction(android.content.Intent.ACTION_SEND_MULTIPLE);
+				mail.putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris);
+				startActivity(mail);
+
+//				this is for bluetooth
+//				mEvHandler.sendFile(mHeldFiles);
 				mode.finish();
 				return true;
 			}
@@ -153,7 +181,7 @@ public class MainActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_fragments);
-        
+                
         mEvHandler = ((DirContentActivity)getFragmentManager()
         					.findFragmentById(R.id.content_frag)).getEventHandlerInst();
         mFileManger = ((DirContentActivity)getFragmentManager()
@@ -162,7 +190,7 @@ public class MainActivity extends Activity {
         mPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         mSearchView = new SearchView(this);
         mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-        	
+        
 			@Override
 			public boolean onQueryTextSubmit(String query) {
 				mSearchView.clearFocus();

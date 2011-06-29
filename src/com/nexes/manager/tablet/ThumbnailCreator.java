@@ -20,8 +20,10 @@ package com.nexes.manager.tablet;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.os.Handler;
 import android.os.Message;
+import android.view.Gravity;
 import android.util.Log;
 
 import java.lang.ref.SoftReference;
@@ -29,55 +31,69 @@ import java.util.HashMap;
 import java.io.File;
 
 public class ThumbnailCreator {
+	
 	private int mWidth;
 	private int mHeight;
 	private SoftReference<Bitmap> mThumb;
-	private static HashMap<String, Bitmap> cacheMap;
+	private static HashMap<String, BitmapDrawable> mCacheMap = null;
 
 	public ThumbnailCreator(int width, int height) {
 		mHeight = height;
-		mWidth = mHeight * (4/3);
+		mWidth = width;
 		
-		cacheMap = new HashMap<String, Bitmap>();
+		if(mCacheMap == null)
+			mCacheMap = new HashMap<String, BitmapDrawable>();
 	}
-		
-	public Bitmap isBitmapCached(String name) {
-		return cacheMap.get(name);
+	
+	public BitmapDrawable isBitmapCached(String name) {
+		return mCacheMap.get(name);
 	}
 
-	public void createNewThumbnail(final String imageName, final Handler handler) {
-		
+	/*
+	 * This needs to be done properly. 
+	 */
+	public void createNewThumbnail(final String imageName, final Handler handler) {		
 		Thread thread = new Thread() {
+			
 			public void run() {
 				File file = new File(imageName);
-				
+				long len_kb = file.length() / 1024;
+							
 				BitmapFactory.Options options = new BitmapFactory.Options();
-				options.inSampleSize = 32;
 				options.outWidth = mWidth;
 				options.outHeight = mHeight;
+					
+				if (len_kb > 400 && len_kb < 1600) {
+					options.inSampleSize = 16;
+					mThumb = new SoftReference<Bitmap>(BitmapFactory.decodeFile(imageName, options));
+										
+				} else if (len_kb >= 1600) {
+					options.inSampleSize = 32;
+					mThumb = new SoftReference<Bitmap>(BitmapFactory.decodeFile(imageName, options));
 									
-				mThumb = (file.length() > 100000) ?
-						 new SoftReference<Bitmap>(BitmapFactory.decodeFile(imageName, options)) : 
-						 new SoftReference<Bitmap>(Bitmap.createScaledBitmap(
-								 						  BitmapFactory.decodeFile(imageName),
-								 						  mWidth,
-								 						  mHeight,
-								 						  false));
-				cacheMap.put(imageName, mThumb.get());
+				} else if (len_kb <= 400) {
+					mThumb = new SoftReference<Bitmap>(Bitmap.createScaledBitmap(
+							 						   BitmapFactory.decodeFile(imageName),
+							 						   mWidth,
+							 						   mHeight,
+							 						   false));
+				}
+				
+				BitmapDrawable d = new BitmapDrawable(mThumb.get());
+				d.setGravity(Gravity.CENTER);
+				mCacheMap.put(imageName, d);
+				
 				handler.post(new Runnable() {
 					@Override
 					public void run() {
 						Message msg = handler.obtainMessage();
-						msg.obj = cacheMap.get(imageName);
+						msg.obj = (BitmapDrawable)mCacheMap.get((imageName));
 						msg.sendToTarget();
 					}
 				});
 			}
 		};
 		thread.start();
+
 	}
-
 }
-
-
-

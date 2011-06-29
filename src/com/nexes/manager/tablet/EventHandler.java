@@ -183,7 +183,7 @@ public class EventHandler {
 		.setView(view)
 		.setTitle("Create a new Folder")
 		.setCancelable(false)
-		.setIcon(R.drawable.download_md).create().show();
+		.setIcon(R.drawable.folder_md).create().show();
 	}
 	
 	public void sendFile(final ArrayList<String> path) {
@@ -233,7 +233,6 @@ public class EventHandler {
 						mContext.startActivity(mail);
 						break;
 				}
-				
 			}
 		}).create().show();
 	}
@@ -272,7 +271,7 @@ public class EventHandler {
 		b.setTitle("Unzip file " + zipFile)
 		 .setMessage("Would you like to unzip " + zipFile +
 				 	 " here or some other folder?")
-		 .setIcon(R.drawable.download_md)
+		 .setIcon(R.drawable.zip_md)
 		 .setPositiveButton("Unzip here", new DialogInterface.OnClickListener() {
 			
 			@Override
