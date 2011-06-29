@@ -34,12 +34,10 @@ public class ThumbnailCreator extends Thread {
 	private int mWidth;
 	private int mHeight;
 	private SoftReference<Bitmap> mThumb;
-	private static HashMap<String, BitmapDrawable> mCacheMap = null;
-	
-	//test vars
-	private ArrayList<String> files;
-	private String dir;
-	private Handler handler;
+	private static HashMap<String, BitmapDrawable> mCacheMap = null;	
+	private ArrayList<String> mFiles;
+	private String mDir;
+	private Handler mHandler;
 
 	public ThumbnailCreator(int width, int height) {
 		mHeight = height;
@@ -55,10 +53,10 @@ public class ThumbnailCreator extends Thread {
 
 	@Override
 	public void run() {
-		int len = files.size();
+		int len = mFiles.size();
 		
 		for (int i = 0; i < len; i++) {			
-			final File file = new File(dir + "/" + files.get(i));
+			final File file = new File(mDir + "/" + mFiles.get(i));
 			
 			if (isImageFile(file.getName())) {
 				long len_kb = file.length() / 1024;
@@ -93,10 +91,10 @@ public class ThumbnailCreator extends Thread {
 				d.setGravity(Gravity.CENTER);
 				mCacheMap.put(file.getPath(), d);
 				
-				handler.post(new Runnable() {
+				mHandler.post(new Runnable() {
 					@Override
 					public void run() {
-						Message msg = handler.obtainMessage();
+						Message msg = mHandler.obtainMessage();
 						msg.obj = (BitmapDrawable)d;
 						msg.sendToTarget();
 					}
@@ -106,9 +104,9 @@ public class ThumbnailCreator extends Thread {
 	}
 	
 	public void createNewThumbnail(ArrayList<String> files,  String dir,  Handler handler) {
-		this.files = files;
-		this.dir = dir;
-		this.handler = handler;		
+		this.mFiles = files;
+		this.mDir = dir;
+		this.mHandler = handler;		
 	}
 	
 	private boolean isImageFile(String file) {
