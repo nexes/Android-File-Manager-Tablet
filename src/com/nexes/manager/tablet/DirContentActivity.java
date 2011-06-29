@@ -81,6 +81,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 	private FileManager mFileMang;
 	private EventHandler mHandler;
 	private MultiSelectHandler mMultiSelect;
+	private ThumbnailCreator mThumbnail;
 	private static OnBookMarkAddListener mBookmarkList;
 	
 	private LinearLayout mPathView, mMultiSelectView;
@@ -467,6 +468,9 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		}
 		
 		if(file.isDirectory() && !mActionModeSelected ) {
+			if (mThumbnail != null)
+				mThumbnail = null;
+			
 			addBackButton(name, true);
 
 		} else if (!file.isDirectory() && !mActionModeSelected ) {
@@ -615,6 +619,9 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		
 		if(mActionModeSelected || mMultiSelectOn)
 			return;
+		
+		if (mThumbnail != null)
+			mThumbnail = null;
 		
 		mData = mFileMang.setHomeDir(name);
 		mDelegate.notifyDataSetChanged();
@@ -870,20 +877,20 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
     	private final int GB = MG * KB;
     	
 		private DataViewHolder mHolder;
-		private ThumbnailCreator mThumbnail;
 		private String mName;
 		
 		public DataAdapter(Context context, int layout, ArrayList<String> data) {
 			super(context, layout, data);			
-			mThumbnail = new ThumbnailCreator(72, 72);
-			
 		}
 		
 		@Override
 		public View getView(int position, View view, ViewGroup parent) {
 			String ext;
 			File file = null;
-			String current = mFileMang.getCurrentDir();		
+			String current = mFileMang.getCurrentDir();
+			
+			if (mThumbnail == null)
+				mThumbnail = new ThumbnailCreator(72, 72);
 
 			mName = mData.get(position);
 			file = new File(current + "/" + mName);
@@ -973,15 +980,16 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 					if (thumb == null) {
 						final Handler handle = new Handler(new Handler.Callback() {
 							public boolean handleMessage(Message msg) {
-								mHolder.mIcon.setImageDrawable((BitmapDrawable)msg.obj);
-								mHolder.mIcon.setScaleType(ScaleType.CENTER);
 								notifyDataSetChanged();
 								
 								return true;
 							}
 						});
+										
+						mThumbnail.createNewThumbnail(mData, mFileMang.getCurrentDir(), handle);
 						
-						mThumbnail.createNewThumbnail(file.getPath(), handle);
+						if (!mThumbnail.isAlive()) 
+							mThumbnail.start();
 						
 					} else {
 						mHolder.mIcon.setImageDrawable(thumb);

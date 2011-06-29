@@ -24,18 +24,22 @@ import android.graphics.drawable.BitmapDrawable;
 import android.os.Handler;
 import android.os.Message;
 import android.view.Gravity;
-import android.util.Log;
 
 import java.lang.ref.SoftReference;
 import java.util.HashMap;
+import java.util.ArrayList;
 import java.io.File;
 
-public class ThumbnailCreator {
-	
+public class ThumbnailCreator extends Thread {
 	private int mWidth;
 	private int mHeight;
 	private SoftReference<Bitmap> mThumb;
 	private static HashMap<String, BitmapDrawable> mCacheMap = null;
+	
+	//test vars
+	private ArrayList<String> files;
+	private String dir;
+	private Handler handler;
 
 	public ThumbnailCreator(int width, int height) {
 		mHeight = height;
@@ -49,51 +53,72 @@ public class ThumbnailCreator {
 		return mCacheMap.get(name);
 	}
 
-	/*
-	 * This needs to be done properly. 
-	 */
-	public void createNewThumbnail(final String imageName, final Handler handler) {		
-		Thread thread = new Thread() {
+	@Override
+	public void run() {
+		int len = files.size();
+		
+		for (int i = 0; i < len; i++) {			
+			final File file = new File(dir + "/" + files.get(i));
 			
-			public void run() {
-				File file = new File(imageName);
+			if (isImageFile(file.getName())) {
 				long len_kb = file.length() / 1024;
-							
+				
 				BitmapFactory.Options options = new BitmapFactory.Options();
 				options.outWidth = mWidth;
 				options.outHeight = mHeight;
 					
-				if (len_kb > 400 && len_kb < 1600) {
+				if (len_kb > 500 && len_kb < 2000) {
 					options.inSampleSize = 16;
-					mThumb = new SoftReference<Bitmap>(BitmapFactory.decodeFile(imageName, options));
+					options.inPurgeable = true;
+					options.inPreferQualityOverSpeed = false;
+					mThumb = new SoftReference<Bitmap>(BitmapFactory.decodeFile(file.getPath(), options));
 										
-				} else if (len_kb >= 1600) {
+				} else if (len_kb >= 2000) {
 					options.inSampleSize = 32;
-					mThumb = new SoftReference<Bitmap>(BitmapFactory.decodeFile(imageName, options));
+					options.inPurgeable = true;
+					options.inPreferQualityOverSpeed = false;
+					mThumb = new SoftReference<Bitmap>(BitmapFactory.decodeFile(file.getPath(), options));
 									
-				} else if (len_kb <= 400) {
+				} else if (len_kb <= 500) {
+					options.inPurgeable = true;
 					mThumb = new SoftReference<Bitmap>(Bitmap.createScaledBitmap(
-							 						   BitmapFactory.decodeFile(imageName),
+							 						   BitmapFactory.decodeFile(file.getPath()),
 							 						   mWidth,
 							 						   mHeight,
 							 						   false));
 				}
 				
-				BitmapDrawable d = new BitmapDrawable(mThumb.get());
+				final BitmapDrawable d = new BitmapDrawable(mThumb.get());
+				
 				d.setGravity(Gravity.CENTER);
-				mCacheMap.put(imageName, d);
+				mCacheMap.put(file.getPath(), d);
 				
 				handler.post(new Runnable() {
 					@Override
 					public void run() {
 						Message msg = handler.obtainMessage();
-						msg.obj = (BitmapDrawable)mCacheMap.get((imageName));
+						msg.obj = (BitmapDrawable)d;
 						msg.sendToTarget();
 					}
 				});
 			}
-		};
-		thread.start();
-
+		}
+	}
+	
+	public void createNewThumbnail(ArrayList<String> files,  String dir,  Handler handler) {
+		this.files = files;
+		this.dir = dir;
+		this.handler = handler;		
+	}
+	
+	private boolean isImageFile(String file) {
+		String ext = file.substring(file.lastIndexOf(".") + 1);
+		
+		if (ext.equalsIgnoreCase("png") || ext.equalsIgnoreCase("jpg") ||
+			ext.equalsIgnoreCase("jpeg")|| ext.equalsIgnoreCase("gif") ||
+			ext.equalsIgnoreCase("tiff")|| ext.equalsIgnoreCase("tif"))
+			return true;
+		
+		return false;
 	}
 }
