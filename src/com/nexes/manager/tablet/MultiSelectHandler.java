@@ -1,6 +1,7 @@
 package com.nexes.manager.tablet;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.view.View;
 import android.view.LayoutInflater;
 import android.widget.ImageView;
@@ -14,7 +15,9 @@ public class MultiSelectHandler {
 	private static Context mContext;
 	private static LayoutInflater mInflater;
 	private static ArrayList<String> mFileList = null;
+	
 	private View view;
+	private ThumbnailCreator mThumbnail = null;
 	
 	public static MultiSelectHandler getInstance(Context context) {
 		//make this cleaner
@@ -27,6 +30,12 @@ public class MultiSelectHandler {
 		mInflater = (LayoutInflater)mContext
 						.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 		return mInstance;
+	}
+	
+	public View addFile(String file, ThumbnailCreator thumbs) {
+		mThumbnail = thumbs;
+		
+		return addFile(file);
 	}
 	
 	public View addFile(String file) {	
@@ -47,7 +56,25 @@ public class MultiSelectHandler {
 			ext = file.substring(file.lastIndexOf(".") + 1, file.length());
 		}
 	
-		setImage(ext, image);
+		if (mThumbnail == null) {
+			setImage(ext, image);
+			
+		} else {
+			if (ext.equalsIgnoreCase("png") || 
+				ext.equalsIgnoreCase("jpg") ||
+				ext.equalsIgnoreCase("jpeg")|| 
+				ext.equalsIgnoreCase("gif")) {
+				Bitmap b = Bitmap.createScaledBitmap(mThumbnail.isBitmapCached(file).getBitmap(), 
+													 52,
+													 52,
+													 false);
+				image.setImageBitmap(b);
+				
+			} else {
+				setImage(ext, image);
+			}
+		}
+			
 		mFileList.add(file);
 		
 		return view;

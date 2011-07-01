@@ -451,7 +451,13 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		file = new File(mFileMang.getCurrentDir() + "/" + name);
 		
 		if(mMultiSelectOn) {
-			View v = mMultiSelect.addFile(file.getPath());
+			View v;
+			
+			if (mThumbnail == null)
+				v = mMultiSelect.addFile(file.getPath());
+			else
+				v = mMultiSelect.addFile(file.getPath(), mThumbnail);
+			
 			if(v == null)
 				return;
 			
