@@ -41,7 +41,6 @@ import android.widget.EditText;
 import android.widget.ArrayAdapter;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.Toast;
-import android.util.Log;
 
 import java.util.ArrayList;
 import java.io.File;

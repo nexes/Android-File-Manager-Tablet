@@ -2,11 +2,9 @@ package com.nexes.manager.tablet;
 
 import android.content.Context;
 import android.view.View;
-import android.graphics.Bitmap;
 import android.view.LayoutInflater;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.util.Log;
 
 import java.util.ArrayList;
 import java.io.File;
@@ -71,9 +69,7 @@ public class MultiSelectHandler {
 	public void cancelMultiSelect() {
 		mFileList.clear();
 		mFileList = null;
-		mInstance = null;
-		
-		Log.e("MULTISELECT", "cancel called");
+		mInstance = null;		
 	}
 	
 	private void setImage(String extension, ImageView image) {

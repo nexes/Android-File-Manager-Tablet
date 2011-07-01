@@ -30,6 +30,8 @@ import android.app.Fragment;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.content.ClipData;
+import android.content.ClipDescription;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ActivityNotFoundException;
@@ -41,7 +43,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView.ScaleType;
 import android.widget.Toast;
 import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
@@ -54,7 +55,6 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.net.Uri;
-import android.util.Log;
 
 public class DirContentActivity extends Fragment implements OnItemClickListener,
 															OnSetingsChangeListener,
@@ -411,8 +411,8 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		} else if(!mShowGrid) {
 			mDelegate = new DataAdapter(mContext, R.layout.list_content_layout, mData);
 			mList.setVisibility(View.VISIBLE);	
-			mList.setOnItemClickListener(this);
 			mList.setAdapter(mDelegate);
+			mList.setOnItemClickListener(this);
 			mList.setOnItemLongClickListener(new OnItemLongClickListener() {
 
 				@Override
@@ -457,7 +457,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			
 			v.setOnClickListener(new View.OnClickListener() {
 				@Override
-				public void onClick(View v) {
+				public void onClick(View v) {					
 					int ret = mMultiSelect.clearFileEntry(file.getPath());
 					mMultiSelectView.removeViewAt(ret);
 				}
@@ -468,8 +468,10 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		}
 		
 		if(file.isDirectory() && !mActionModeSelected ) {
-			if (mThumbnail != null)
+			if (mThumbnail != null) {
+				mThumbnail.setCancelThumbnails(true);
 				mThumbnail = null;
+			}
 			
 			addBackButton(name, true);
 
@@ -620,8 +622,10 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 		if(mActionModeSelected || mMultiSelectOn)
 			return;
 		
-		if (mThumbnail != null)
+		if (mThumbnail != null) {
+			mThumbnail.setCancelThumbnails(true);
 			mThumbnail = null;
+		}
 		
 		mData = mFileMang.setHomeDir(name);
 		mDelegate.notifyDataSetChanged();
@@ -845,6 +849,11 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 				
 				if(mActionModeSelected || mMultiSelectOn)
 					return;
+				
+				if (mThumbnail != null) {
+					mThumbnail.setCancelThumbnails(true);
+					mThumbnail = null;
+				}
 				
 				if(index != (mPathView.getChildCount() - 1)) {
 					while(index < mPathView.getChildCount() - 1)

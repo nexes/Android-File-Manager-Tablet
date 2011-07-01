@@ -38,6 +38,7 @@ public class ThumbnailCreator extends Thread {
 	private ArrayList<String> mFiles;
 	private String mDir;
 	private Handler mHandler;
+	private boolean mStop = false;
 
 	public ThumbnailCreator(int width, int height) {
 		mHeight = height;
@@ -50,12 +51,28 @@ public class ThumbnailCreator extends Thread {
 	public BitmapDrawable isBitmapCached(String name) {
 		return mCacheMap.get(name);
 	}
+	
+	public void createNewThumbnail(ArrayList<String> files,  String dir,  Handler handler) {
+		this.mFiles = files;
+		this.mDir = dir;
+		this.mHandler = handler;		
+	}
+	
+	public void setCancelThumbnails(boolean stop) {
+		mStop = stop;
+	}
 
 	@Override
 	public void run() {
 		int len = mFiles.size();
 		
-		for (int i = 0; i < len; i++) {			
+		for (int i = 0; i < len; i++) {	
+			if (mStop) {
+				mStop = false;
+				mFiles = null;
+				return;
+			}
+			
 			final File file = new File(mDir + "/" + mFiles.get(i));
 			
 			if (isImageFile(file.getName())) {
@@ -101,12 +118,6 @@ public class ThumbnailCreator extends Thread {
 				});
 			}
 		}
-	}
-	
-	public void createNewThumbnail(ArrayList<String> files,  String dir,  Handler handler) {
-		this.mFiles = files;
-		this.mDir = dir;
-		this.mHandler = handler;		
 	}
 	
 	private boolean isImageFile(String file) {

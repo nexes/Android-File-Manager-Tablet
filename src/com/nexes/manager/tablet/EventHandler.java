@@ -30,7 +30,6 @@ import android.widget.Toast;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.net.Uri;
-import android.util.Log;
 
 import java.util.ArrayList;
 import java.io.File;

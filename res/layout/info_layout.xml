@@ -189,7 +189,7 @@
 						android:textColor="@color/white"
 						android:gravity="left"
 						android:textAppearance="?android:attr/textAppearanceMedium"
-						android:text="Excecute: "/>
+						android:text="Execute: "/>
 					<TextView
 						android:id="@+id/info_execute_perm"
 						android:layout_width="match_parent"

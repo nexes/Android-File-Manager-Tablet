@@ -30,7 +30,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.SearchView;
 import android.widget.Toast;
-import android.util.Log;
 
 import java.io.File;
 import java.util.ArrayList;
