@@ -944,7 +944,9 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			
 			/* assign custom icons based on file type */
 			if(file.isDirectory()) {
-				if(file.canRead() && file.list().length > 0)
+				String[] lists = file.list();
+				
+				if(file.canRead() && lists != null && lists.length > 0)
 					mHolder.mIcon.setImageResource(R.drawable.folder_large_full);
 				else
 					mHolder.mIcon.setImageResource(R.drawable.folder_large);
