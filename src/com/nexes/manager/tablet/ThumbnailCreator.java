@@ -75,47 +75,59 @@ public class ThumbnailCreator extends Thread {
 			
 			final File file = new File(mDir + "/" + mFiles.get(i));
 			
-			if (isImageFile(file.getName())) {
-				long len_kb = file.length() / 1024;
-				
-				BitmapFactory.Options options = new BitmapFactory.Options();
-				options.outWidth = mWidth;
-				options.outHeight = mHeight;
-					
-				if (len_kb > 500 && len_kb < 2000) {
-					options.inSampleSize = 16;
-					options.inPurgeable = true;
-					options.inPreferQualityOverSpeed = false;
-					mThumb = new SoftReference<Bitmap>(BitmapFactory.decodeFile(file.getPath(), options));
-										
-				} else if (len_kb >= 2000) {
-					options.inSampleSize = 32;
-					options.inPurgeable = true;
-					options.inPreferQualityOverSpeed = false;
-					mThumb = new SoftReference<Bitmap>(BitmapFactory.decodeFile(file.getPath(), options));
-									
-				} else if (len_kb <= 500) {
-					options.inPurgeable = true;
-					mThumb = new SoftReference<Bitmap>(Bitmap.createScaledBitmap(
-							 						   BitmapFactory.decodeFile(file.getPath()),
-							 						   mWidth,
-							 						   mHeight,
-							 						   false));
-				}
-				
-				final BitmapDrawable d = new BitmapDrawable(mThumb.get());
-				
-				d.setGravity(Gravity.CENTER);
-				mCacheMap.put(file.getPath(), d);
-				
+			//we already loaded this thumbnail, just return it.
+			if (mCacheMap.containsKey(file.getPath())) {
 				mHandler.post(new Runnable() {
 					@Override
 					public void run() {
 						Message msg = mHandler.obtainMessage();
-						msg.obj = (BitmapDrawable)d;
+						msg.obj = mCacheMap.get(file.getPath());
 						msg.sendToTarget();
 					}
 				});
+				
+			//we havn't loaded it yet, lets make it. 
+			} else {
+				if (isImageFile(file.getName())) {
+					long len_kb = file.length() / 1024;
+					
+					BitmapFactory.Options options = new BitmapFactory.Options();
+					options.outWidth = mWidth;
+					options.outHeight = mHeight;
+											
+					if (len_kb > 500 && len_kb < 2000) {
+						options.inSampleSize = 16;
+						options.inPurgeable = true;
+						mThumb = new SoftReference<Bitmap>(BitmapFactory.decodeFile(file.getPath(), options));
+											
+					} else if (len_kb >= 2000) {
+						options.inSampleSize = 32;
+						options.inPurgeable = true;
+						mThumb = new SoftReference<Bitmap>(BitmapFactory.decodeFile(file.getPath(), options));
+										
+					} else if (len_kb <= 500) {
+						options.inPurgeable = true;
+						mThumb = new SoftReference<Bitmap>(Bitmap.createScaledBitmap(
+								 						   BitmapFactory.decodeFile(file.getPath()),
+								 						   mWidth,
+								 						   mHeight,
+								 						   false));
+					}
+					
+					final BitmapDrawable d = new BitmapDrawable(mThumb.get());
+					
+					d.setGravity(Gravity.CENTER);
+					mCacheMap.put(file.getPath(), d);
+					
+					mHandler.post(new Runnable() {
+						@Override
+						public void run() {
+							Message msg = mHandler.obtainMessage();
+							msg.obj = (BitmapDrawable)d;
+							msg.sendToTarget();
+						}
+					});
+				}
 			}
 		}
 	}
