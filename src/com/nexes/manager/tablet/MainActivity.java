@@ -206,7 +206,7 @@ public class MainActivity extends Activity {
         
         /* read and display the users preferences */
         mSettingsListener.onHiddenFilesChanged(mPreferences.getBoolean(SettingsActivity.PREF_HIDDEN_KEY, false));
-		mSettingsListener.onThumbnailChanged(mPreferences.getBoolean(SettingsActivity.PREF_THUMB_KEY, false));
+		mSettingsListener.onThumbnailChanged(mPreferences.getBoolean(SettingsActivity.PREF_THUMB_KEY, true));
 		mSettingsListener.onViewChanged(mPreferences.getString(SettingsActivity.PREF_VIEW_KEY, "grid"));
 		mSettingsListener.onSortingChanged(mPreferences.getString(SettingsActivity.PREF_SORT_KEY, "type"));
     }
@@ -314,12 +314,22 @@ public class MainActivity extends Activity {
     	super.onPause();
     	String list = ((DirListActivity)getFragmentManager()
     					.findFragmentById(R.id.list_frag)).getDirListString();
-    	String saved = mPreferences.getString(SettingsActivity.PREF_LIST_KEY, "");
+    	String bookmark = ((DirListActivity)getFragmentManager()
+    					.findFragmentById(R.id.list_frag)).getBookMarkNameString();
     	
-    	if(!list.equals(saved)) {
+    	String saved = mPreferences.getString(SettingsActivity.PREF_LIST_KEY, "");
+    	String saved_book = mPreferences.getString(SettingsActivity.PREF_BOOKNAME_KEY, "");
+    	
+    	if (!list.equals(saved)) {
     		SharedPreferences.Editor e = mPreferences.edit();
     		e.putString(SettingsActivity.PREF_LIST_KEY, list);
-    		e.commit();    		
+    		e.commit();
+    	}
+    	
+    	if (!bookmark.equals(saved_book)) {
+    		SharedPreferences.Editor e = mPreferences.edit();
+    		e.putString(SettingsActivity.PREF_BOOKNAME_KEY, bookmark);
+    		e.commit();
     	}
     }
 }

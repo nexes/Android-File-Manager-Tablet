@@ -27,11 +27,9 @@ import android.content.DialogInterface;
 import android.preference.PreferenceManager;
 import android.app.ListFragment;
 import android.app.AlertDialog;
-import android.view.ContextMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.LayoutInflater;
-import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
@@ -39,7 +37,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.EditText;
 import android.widget.ArrayAdapter;
-import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -47,15 +44,16 @@ import java.io.File;
 
 public class DirListActivity extends ListFragment implements OnBookMarkAddListener,
 															 OnItemLongClickListener{
-	private static final String PREF_LIST_KEY =	"pref_dirlist";
 	private static final int BOOKMARK_POS = 6;
 	
 	private static OnChangeLocationListener mChangeLocList;
 	private ArrayList<String> mDirList;
+	private ArrayList<String> mBookmarkNames;
 	private Context mContext;
 	private ImageView mLastIndicater = null;
 	private DirListAdapter mDelegate;
 	private String mDirListString;
+	private String mBookmarkString;
 	
 
 	public interface OnChangeLocationListener {
@@ -69,10 +67,14 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 		String storage = "/" + Environment.getExternalStorageDirectory().getName();
 		mContext = getActivity();
 		mDirList = new ArrayList<String>();
+		mBookmarkNames = new ArrayList<String>();
 		mDirListString = (PreferenceManager.getDefaultSharedPreferences(mContext))
-												.getString(PREF_LIST_KEY, "");
+										    .getString(SettingsActivity.PREF_LIST_KEY, "");
 		
-		if(mDirListString.length() > 0) {		
+		mBookmarkString = (PreferenceManager.getDefaultSharedPreferences(mContext))
+											.getString(SettingsActivity.PREF_BOOKNAME_KEY, "");
+		
+		if (mDirListString.length() > 0) {
 			String[] l = mDirListString.split(":");
 			
 			for(String string : l)
@@ -87,12 +89,18 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 			mDirList.add(storage + "/" + "Pictures");
 			mDirList.add("Bookmarks");			
 		}
+		
+		if (mBookmarkString.length() > 0) {
+			String[] l = mBookmarkString.split(":");
+			
+			for(String string : l)
+				mBookmarkNames.add(string);
+		}
 	}
 	
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
-		getView().setBackgroundResource(R.color.gray);
 		
 		ListView lv = getListView();		
 		lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
@@ -129,18 +137,19 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 	
 	@Override
 	public boolean onItemLongClick(AdapterView<?> list, View view, int pos, long id) {
+		AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
+		LayoutInflater inflater = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+		
+		View v = inflater.inflate(R.layout.input_dialog_layout, null);
+		final EditText text = (EditText)v.findViewById(R.id.dialog_input);
+		
 		
 		/* the first two items in our dir list is / and scdard.
 		 * the user should not be able to change the location
 		 * of these two entries. Everything else is fair game */
 		if (pos > 1 && pos < BOOKMARK_POS) {
-			AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-			LayoutInflater inflater = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			
-			View v = inflater.inflate(R.layout.input_dialog_layout, null);
 			final int position = pos;
-			final EditText text = (EditText)v.findViewById(R.id.dialog_input);
-			
+						
 			((TextView)v.findViewById(R.id.dialog_message))
 							.setText("Change the location of this directory.");
 			
@@ -186,41 +195,55 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 			
 			builder.create().show();
 			return true;
-		}
 		
-		return false;
-	}
-	
-	@Override
-	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
-		final int pos = ((AdapterContextMenuInfo)menuInfo).position;
-		
-		if(pos <= BOOKMARK_POS)
-			return;
-
-		new AlertDialog.Builder(mContext)
-			.setTitle("Remove Bookmark " + mDirList.get(pos))
-			.setMessage("Are you sure you want to remove this as a bookmark?")
-			.setPositiveButton("Remove", new DialogInterface.OnClickListener() {
+		/*manage the users bookmarks, delete or rename*/
+		} else if (pos > BOOKMARK_POS) {
+			final int p = pos;
+			final String bookmark = mBookmarkNames.get(p - (BOOKMARK_POS + 1));
+			
+			builder.setTitle("Manage bookmark " + bookmark);
+			builder.setIcon(R.drawable.folder_md);
+			builder.setView(v);
+			
+			((TextView)v.findViewById(R.id.dialog_message))
+						.setText("Would you like to delete or rename this bookmark?");
+			
+			text.setText(bookmark);
+			builder.setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+				
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					mDirList.remove(pos);
+					mDirList.remove(p);
+					mBookmarkNames.remove(p - (BOOKMARK_POS + 1));
+					
 					buildDirString();
 					mDelegate.notifyDataSetChanged();
 				}
-			})
-			.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			});
+			builder.setNegativeButton("Rename", new DialogInterface.OnClickListener() {
+				
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					dialog.dismiss();
+					mBookmarkNames.remove(p - (BOOKMARK_POS + 1));
+					mBookmarkNames.add(p - (BOOKMARK_POS + 1), text.getText().toString());
+					
+					buildDirString();
+					mDelegate.notifyDataSetChanged();
 				}
-				
-			}).create().show();		
+			});
+			
+			builder.create().show();
+			return true;
+			
+		}
+		return false;
 	}
-		
+
 	@Override
 	public void onBookMarkAdd(String path) {
 		mDirList.add(path);
+		mBookmarkNames.add(path.substring(path.lastIndexOf("/") + 1));
+		
 		buildDirString();
 		mDelegate.notifyDataSetChanged();
 	}
@@ -229,12 +252,17 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 		mChangeLocList = l;
 	}
 	
-	public void setDirListString(String list) {
-		mDirListString = list;
-	}
+//	public void setDirListString(String list) {
+//		mDirListString = list;
+//	}
 	
 	public String getDirListString() {
 		return mDirListString;
+	}
+	
+	
+	public String getBookMarkNameString() {
+		return mBookmarkString;
 	}
 	
 	/*
@@ -242,12 +270,19 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 	 * from preferences. 
 	 */
 	private void buildDirString() {
+		int len = mDirList.size();
 		
-		if(mDirListString != null && mDirListString.length() > 0)
+		if(mDirListString != null && mDirListString.length() > 0) {
 			mDirListString = "";
+			mBookmarkString = "";
+		}
 		
-		for(String l : mDirList)
-			mDirListString += l + ":";
+		for (int i = 0; i <len; i++) {
+			mDirListString += mDirList.get(i) + ":";
+			
+			if (i > BOOKMARK_POS && mBookmarkNames.size() > 0)
+				mBookmarkString += mBookmarkNames.get(i - (BOOKMARK_POS + 1)) + ":";
+		}
 	}
 	
 	
@@ -263,9 +298,7 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 		}
 		
 		@Override
-		public View getView(int position, View view, ViewGroup parent) {
-			String name = mDirList.get(position);
-			
+		public View getView(int position, View view, ViewGroup parent) {			
 			if(view == null) {
 				LayoutInflater in = (LayoutInflater)mContext.
 									getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -321,8 +354,7 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 				break;
 				
 			default:
-				mHolder.mMainText.setText(name.substring(name.lastIndexOf("/") + 1, 
-						  				  name.length()));
+				mHolder.mMainText.setText(mBookmarkNames.get(position - (BOOKMARK_POS + 1)));				
 				mHolder.mIcon.setImageResource(R.drawable.folder_md);
 				break;
 			}

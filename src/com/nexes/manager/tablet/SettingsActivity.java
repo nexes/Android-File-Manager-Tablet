@@ -24,6 +24,7 @@ import android.preference.PreferenceActivity;
 public class SettingsActivity extends PreferenceActivity {
 	//keys used for preference file
 	public static final String PREF_LIST_KEY =		"pref_dirlist";
+	public static final String PREF_BOOKNAME_KEY = 	"pref_bookmarks";
 	public static final String PREF_HIDDEN_KEY = 	"pref_hiddenFiles";
 	public static final String PREF_THUMB_KEY	=	"pref_thumbnail";
 	public static final String PREF_VIEW_KEY =		"pref_view";
