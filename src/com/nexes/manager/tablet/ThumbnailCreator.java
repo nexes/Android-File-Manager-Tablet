@@ -21,6 +21,7 @@ package com.nexes.manager.tablet;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
+import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 import android.view.Gravity;
@@ -36,13 +37,16 @@ public class ThumbnailCreator extends Thread {
 	private SoftReference<Bitmap> mThumb;
 	private static HashMap<String, BitmapDrawable> mCacheMap = null;	
 	private ArrayList<String> mFiles;
+	
+	private Context mContext;
 	private String mDir;
 	private Handler mHandler;
 	private boolean mStop = false;
 
-	public ThumbnailCreator(int width, int height) {
+	public ThumbnailCreator(Context context, int width, int height) {
 		mHeight = height;
 		mWidth = width;
+		mContext = context;
 		
 		if(mCacheMap == null)
 			mCacheMap = new HashMap<String, BitmapDrawable>();
@@ -85,7 +89,7 @@ public class ThumbnailCreator extends Thread {
 						msg.sendToTarget();
 					}
 				});
-				
+			
 			//we havn't loaded it yet, lets make it. 
 			} else {
 				if (isImageFile(file.getName())) {
@@ -97,7 +101,7 @@ public class ThumbnailCreator extends Thread {
 											
 					if (len_kb > 500 && len_kb < 2000) {
 						options.inSampleSize = 16;
-						options.inPurgeable = true;
+						options.inPurgeable = true;						
 						mThumb = new SoftReference<Bitmap>(BitmapFactory.decodeFile(file.getPath(), options));
 											
 					} else if (len_kb >= 2000) {
@@ -107,15 +111,15 @@ public class ThumbnailCreator extends Thread {
 										
 					} else if (len_kb <= 500) {
 						options.inPurgeable = true;
-						mThumb = new SoftReference<Bitmap>(Bitmap.createScaledBitmap(
-								 						   BitmapFactory.decodeFile(file.getPath()),
-								 						   mWidth,
-								 						   mHeight,
-								 						   false));
+						Bitmap b = BitmapFactory.decodeFile(file.getPath());
+						
+						if (b == null) 
+							b = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.photo);
+						
+						mThumb = new SoftReference<Bitmap>(Bitmap.createScaledBitmap(b, mWidth, mHeight, false));
 					}
-					
-					final BitmapDrawable d = new BitmapDrawable(mThumb.get());
-					
+
+					final BitmapDrawable d = new BitmapDrawable(mThumb.get());					
 					d.setGravity(Gravity.CENTER);
 					mCacheMap.put(file.getPath(), d);
 					

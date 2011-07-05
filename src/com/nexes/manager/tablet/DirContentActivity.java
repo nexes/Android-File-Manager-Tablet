@@ -905,7 +905,7 @@ public class DirContentActivity extends Fragment implements OnItemClickListener,
 			String current = mFileMang.getCurrentDir();
 			
 			if (mThumbnail == null)
-				mThumbnail = new ThumbnailCreator(72, 72);
+				mThumbnail = new ThumbnailCreator(mContext, 72, 72);
 
 			mName = mData.get(position);
 			file = new File(current + "/" + mName);
