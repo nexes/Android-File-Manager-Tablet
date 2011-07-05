@@ -66,19 +66,7 @@ public class DialogHandler extends DialogFragment {
 		
 		return instance;
 	}
-	
-	public void setHoldingFileList(ArrayList<String> list) {
-		mFiles = list;
-	}
-	
-	public void setFilePath(String path) {
-		mPath = path;
-	}
-	
-	public void setOnSearchFileSelected(OnSearchFileSelected s) {
-		mSearchListener = s;
-	}
-	
+		
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -103,17 +91,24 @@ public class DialogHandler extends DialogFragment {
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		switch(mDialogType) {
-		case HOLDINGFILE_DIALOG:
-			return createHoldingFileDialog();
-			
-		case SEARCHRESULT_DIALOG:
-			return createSearchResultDialog(inflater);
-			
-		case FILEINFO_DIALOG:
-			return createFileInfoDialog(inflater);
+		case HOLDINGFILE_DIALOG:  	return createHoldingFileDialog();
+		case SEARCHRESULT_DIALOG: 	return createSearchResultDialog(inflater);
+		case FILEINFO_DIALOG:		return createFileInfoDialog(inflater);
 		}
 
 		return super.onCreateView(inflater, container, savedInstanceState);
+	}
+	
+	public void setHoldingFileList(ArrayList<String> list) {
+		mFiles = list;
+	}
+	
+	public void setFilePath(String path) {
+		mPath = path;
+	}
+	
+	public void setOnSearchFileSelected(OnSearchFileSelected s) {
+		mSearchListener = s;
 	}
 	
 	private View createHoldingFileDialog() {

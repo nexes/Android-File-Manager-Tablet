@@ -199,9 +199,10 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 		/*manage the users bookmarks, delete or rename*/
 		} else if (pos > BOOKMARK_POS) {
 			final int p = pos;
-			final String bookmark = mBookmarkNames.get(p - (BOOKMARK_POS + 1));
+
+			String bookmark = mBookmarkNames.get(p - (BOOKMARK_POS + 1));
 			
-			builder.setTitle("Manage bookmark " + bookmark);
+			builder.setTitle("Manage bookmark: " + bookmark);
 			builder.setIcon(R.drawable.folder_md);
 			builder.setView(v);
 			
@@ -251,10 +252,6 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 	public static void setOnChangeLocationListener(OnChangeLocationListener l) {
 		mChangeLocList = l;
 	}
-	
-//	public void setDirListString(String list) {
-//		mDirListString = list;
-//	}
 	
 	public String getDirListString() {
 		return mDirListString;
@@ -354,7 +351,7 @@ public class DirListActivity extends ListFragment implements OnBookMarkAddListen
 				break;
 				
 			default:
-				mHolder.mMainText.setText(mBookmarkNames.get(position - (BOOKMARK_POS + 1)));				
+				mHolder.mMainText.setText(mBookmarkNames.get(position - (BOOKMARK_POS + 1)));
 				mHolder.mIcon.setImageResource(R.drawable.folder_md);
 				break;
 			}

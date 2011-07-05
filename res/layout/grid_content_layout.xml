@@ -22,8 +22,7 @@
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
 	android:gravity="center_horizontal"
-	android:padding="4dp">
-	
+	android:padding="2dip">
 	<ImageView
 		android:id="@+id/content_icon"
 		android:maxWidth="72dip"
